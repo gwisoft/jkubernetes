@@ -43,10 +43,8 @@ def check_java():
 
 def print_commands():
     """Print all client commands and link to documentation"""
-    print ("kubectl command [-s http://apiserverip:port] [--config client_jkubernetes.yaml] [--exclude-jars exclude1.jar,exclude2.jar] [-c key1=value1,key2=value2][command parameter]")
+    print ("kubectl command [-s http://apiserverip:port] [-c key1=value1,key2=value2][command parameter]")
     print ("Commands:\n\t",  "\n\t".join(sorted(COMMANDS.keys())))
-    print ("\n\t[--config client_jkubernetes.yaml]\t\t\t optional, setting client's jkubernetes.yaml")
-    print ("\n\t[--exclude-jars exclude1.jar,exclude2.jar]\t optional, exclude jars, avoid jar conflict")
     print ("\n\t[-c key1=value1,key2=value2]\t\t\t optional, add key=value pair to configuration")
     print ("\nHelp:", "\n\thelp", "\n\thelp <command>")
     print ("\nDocumentation for the jkubernetes client can be found at https://github.com/gwisoft/jkubernetes/wiki/jkubernetes-Chinese-Documentation\n")
@@ -142,7 +140,7 @@ def get_exclude_jars():
 
 def create(args):
 	"""
-	sdsd
+	kubectl create -f ***.yaml
 	"""
 	pass
 
@@ -160,7 +158,7 @@ def create(args):
 
 def kube(args):
 	"""
-	sdsd
+	kubectl kube
 	"""
 	pass
 	
@@ -169,11 +167,27 @@ def kube(args):
 	print (childopts)
 	exec_storm_class(
         "org.jkubernetes.daemon.kube.KubeServer",
-        jvmtype="-client -Xms256m -Xmx256m",
+        jvmtype="-server -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
         childopts=childopts)
-	
+
+def kubelet(args):
+    """
+    kubectl kubelet
+    """
+    pass
+    
+    childopts = get_client_customopts() + get_exclude_jars()
+    print ("childopts=")
+    print (childopts)
+    exec_storm_class(
+        "org.jkubernetes.daemon.kubelet.Kubelet",
+        jvmtype="-server -Xms256m -Xmx256m",
+        sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
+        args=args,
+        childopts=childopts)
+    	
 def get_client_createopts():
 	ret = (" -Dkubernetes.create.yaml=" + JKUBERNETES_CREATE_YAML_PATH + " -Dkubernetes.apiserver.address=" + API_SERVER_ADDRESS)
 	return ret
@@ -248,7 +262,7 @@ def main():
 		sys.exit(-1)
 	sys.exit(STATUS)
 
-COMMANDS = {"create": create,"kube":kube}
+COMMANDS = {"create": create,"kube":kube,"kubelet":kubelet}
 		        
 if __name__ == "__main__":
     #check_java()
