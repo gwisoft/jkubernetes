@@ -153,7 +153,8 @@ def create(args):
         jvmtype="-client -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
-        childopts=childopts)
+        childopts=childopts,
+        isBackgroundRun="false")
 
 def kube(args):
 	"""
@@ -169,7 +170,8 @@ def kube(args):
         jvmtype="-server -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
-        childopts=childopts)
+        childopts=childopts,
+        isBackgroundRun="true")
 
 def kubelet(args):
     """
@@ -185,11 +187,12 @@ def kubelet(args):
         jvmtype="-server -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
-        childopts=childopts)
+        childopts=childopts,
+        isBackgroundRun="true")
     
 def delete(args):
     """
-    kubectl kubelet
+    kubectl delete -f ***.yaml
     """
     pass
     
@@ -197,11 +200,63 @@ def delete(args):
     print ("childopts=")
     print (childopts)
     exec_jkubernetes_class(
-        "org.gwisoft.jkubernetes.daemon.kubelet.Kubelet",
+        "org.gwisoft.jkubernetes.kubectl.KubectlDelete",
         jvmtype="-server -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
-        childopts=childopts)    
+        childopts=childopts,
+        isBackgroundRun="false")  
+    
+def rollingUpdate(args):
+    """
+    kubectl rolling-update [old topology name] -f ***.yaml
+    """
+    pass
+    
+    childopts = get_client_customopts() + get_exclude_jars()
+    print ("childopts=")
+    print (childopts)
+    exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.kubectl.KubectlRollingUpdate",
+        jvmtype="-server -Xms256m -Xmx256m",
+        sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
+        args=args,
+        childopts=childopts,
+        isBackgroundRun="false")   
+    
+def replace(args):
+    """
+    kubectl replace -f ***.yaml
+    """
+    pass
+    
+    childopts = get_client_customopts() + get_exclude_jars()
+    print ("childopts=")
+    print (childopts)
+    exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.kubectl.KubectlReplace",
+        jvmtype="-server -Xms256m -Xmx256m",
+        sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
+        args=args,
+        childopts=childopts,
+        isBackgroundRun="false")
+    
+def get(args):
+    """
+    kubectl get po
+    """
+    pass
+    
+    childopts = get_client_customopts() + get_exclude_jars()
+    print ("childopts=")
+    print (childopts)
+    exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.kubectl.KubectlGet",
+        jvmtype="-server -Xms256m -Xmx256m",
+        sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
+        args=args,
+        childopts=childopts,
+        isBackgroundRun="false")           
     	
 def get_client_createopts():
 	ret = (" -Dkubernetes.create.yaml=" + JKUBERNETES_CREATE_YAML_PATH + " -Dkubernetes.apiserver.address=" + API_SERVER_ADDRESS)
@@ -224,10 +279,10 @@ def parse_client_createopts(args):
 	print (args_list)		
 	return 	args_list	
 		
-def exec_jkubernetes_class(klass, jvmtype="-server", sysdirs=[], args=[], childopts=""):
+def exec_jkubernetes_class(klass, jvmtype="-server", sysdirs=[], args=[], childopts="",isBackgroundRun=""):
     
     args_str = " ".join(args)
-
+        
     command = "java " + " -Dkubernetes.home=" + JKUBERNETES_DIR + " " + get_config_opts() + " " + childopts + " -cp " + get_classpath(sysdirs) + " " + klass + " " + args_str
     
     print ("Running: " + command)
@@ -236,6 +291,7 @@ def exec_jkubernetes_class(klass, jvmtype="-server", sysdirs=[], args=[], childo
 
 #系统自定义的配置入参    
 def get_client_customopts():
+    ret = ("")
     """
     ret = (" -Dkubernetes.root.logger=INFO,stdout -Dlogback.configurationFile=" + JKUBERNETES_DIR +
            "/conf/client_logback.xml -Dlog4j.configuration=File:" + JKUBERNETES_DIR + 
@@ -276,7 +332,7 @@ def main():
 		sys.exit(-1)
 	sys.exit(STATUS)
 
-COMMANDS = {"create": create,"kube":kube,"kubelet":kubelet,"delete":delete,"rolling-update":rolling-update,"replace":replace}
+COMMANDS = {"create": create,"kube":kube,"kubelet":kubelet,"delete":delete,"rolling-update":rollingUpdate,"replace":replace,"get":get}
 		        
 if __name__ == "__main__":
     #check_java()
