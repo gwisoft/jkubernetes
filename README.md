@@ -17,8 +17,8 @@ tar -zxvf jkubernetes-all-*.*.*-SNAPSHOT-distribution.tar.gz
 
 cd jkubernetes-all-*.*.*-SNAPSHOT/bin
 
-kube run: kubectl kube
-kubelet run: kubectl kubelet
+kube run: nohup kubectl kube &
+kubelet run: nohup kubectl kubelet &
 ```
 
 deployment app
