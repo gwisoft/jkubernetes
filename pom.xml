@@ -22,6 +22,7 @@
 		<commons-io.version>2.4</commons-io.version>
 		<curator.version>2.12.0</curator.version>
 		<thrift.version>0.10.0</thrift.version>
+		<gson.version>2.7</gson.version>
 	</properties>
 
 	<dependencies>
@@ -88,6 +89,12 @@
 			<groupId>org.apache.thrift</groupId>
 			<artifactId>libthrift</artifactId>
 			<version>${thrift.version}</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>com.google.code.gson</groupId>
+		    <artifactId>gson</artifactId>
+		    <version>${gson.version}</version>
 		</dependency>
 	</dependencies>
 

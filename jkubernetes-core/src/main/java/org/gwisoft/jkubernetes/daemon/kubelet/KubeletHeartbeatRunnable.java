@@ -11,6 +11,7 @@ import org.gwisoft.jkubernetes.cluster.KubernetesCluster;
 import org.gwisoft.jkubernetes.cluster.KubernetesClusterCoordination;
 import org.gwisoft.jkubernetes.config.KubernetesConfig;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
+import org.gwisoft.jkubernetes.daemon.pod.StatePodHeartbeat;
 import org.gwisoft.jkubernetes.utils.DateUtils;
 import org.gwisoft.jkubernetes.utils.KubernetesUtils;
 import org.gwisoft.jkubernetes.utils.NetWorkUtils;
@@ -48,24 +49,27 @@ public class KubeletHeartbeatRunnable implements Runnable{
 	}
 	@Override
 	public void run() {
-		try{
-			while(!shutdown.get()){
+		
+		while(!shutdown.get()){
+			try{
 				heartbeat.setTimeSecs(DateUtils.getCurrentTimeSecs());
 				heartbeat.setUptimeSecs((int) (DateUtils.getCurrentTimeSecs() - startTime));
 				
 				List<Integer> podList = calculatorAvailablePodIds();
 		        Set<Integer> podIds = KubernetesUtils.listToSet(podList);
 		        heartbeat.setPodIds(podIds);
-		        heartbeat.setAvailableWorkerPorts(getUnusedPodIds(podList));
+		        heartbeat.setUnassignedPodIds(getUnassignedPodIds(podList));
+		        heartbeat.setAvailablePodHeartbeats(KubeletLocalState.getValidPodHeartbeats());
 		        
 		        coordination.setKubeletHeartbeat(heartbeat);
 		        
 		        Integer interval = KubernetesConfig.getPodHeartbeatIntervalMs();
 				Thread.sleep(interval);
+			}catch(Exception e){
+				logger.error("",e);
 			}
-		}catch(Exception e){
-			logger.error("",e);
 		}
+		
 		
 	}
 	
@@ -73,7 +77,7 @@ public class KubeletHeartbeatRunnable implements Runnable{
 		return KubernetesConfig.getKubeletPodIdList();
 	}
 	
-	private Set<Integer> getUnusedPodIds(List<Integer> podList){
+	private Set<Integer> getUnassignedPodIds(List<Integer> podList){
 		Set<Integer> unusedPodIds = new HashSet<Integer>();
 		try {
 			Map<Integer, ResourcePodSlot> hbMap = KubeletLocalState.getLocalAssignments(kubeletId);

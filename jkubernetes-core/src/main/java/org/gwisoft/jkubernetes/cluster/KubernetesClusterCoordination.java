@@ -30,7 +30,11 @@ public interface KubernetesClusterCoordination {
 	
 	public Assignment getAssignment(String topologyId);
 	
+	public Assignment getAssignmentByName(String topologyName);
+	
 	public void setAssignment(Assignment assignment);
+	
+	public void deleteAssignment(String topologyId);
 	
 	public void setKubeletHeartbeat(KubeletHeartbeat heartbeat);
 	

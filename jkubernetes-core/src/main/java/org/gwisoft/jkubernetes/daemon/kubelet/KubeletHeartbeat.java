@@ -1,7 +1,10 @@
 package org.gwisoft.jkubernetes.daemon.kubelet;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Set;
+
+import org.gwisoft.jkubernetes.daemon.pod.PodHeartbeat;
 
 public class KubeletHeartbeat implements Serializable {
 
@@ -15,7 +18,9 @@ public class KubeletHeartbeat implements Serializable {
 
     private Set<Integer> podIds;
 
-    private Set<Integer> availableWorkerPorts;
+    private Set<Integer> unassignedPodIds;
+    
+    Map<Integer, PodHeartbeat> availablePodHeartbeats;
     
     public KubeletHeartbeat(String hostName,String kubeletId){
     	this.hostName = hostName;
@@ -46,12 +51,21 @@ public class KubeletHeartbeat implements Serializable {
 		this.podIds = podIds;
 	}
 
-	public Set<Integer> getAvailableWorkerPorts() {
-		return availableWorkerPorts;
+
+	public Set<Integer> getUnassignedPodIds() {
+		return unassignedPodIds;
 	}
 
-	public void setAvailableWorkerPorts(Set<Integer> availableWorkerPorts) {
-		this.availableWorkerPorts = availableWorkerPorts;
+	public void setUnassignedPodIds(Set<Integer> unassignedPodIds) {
+		this.unassignedPodIds = unassignedPodIds;
+	}
+
+	public Map<Integer, PodHeartbeat> getAvailablePodHeartbeats() {
+		return availablePodHeartbeats;
+	}
+
+	public void setAvailablePodHeartbeats(Map<Integer, PodHeartbeat> availablePodHeartbeats) {
+		this.availablePodHeartbeats = availablePodHeartbeats;
 	}
 
 	public String getHostName() {

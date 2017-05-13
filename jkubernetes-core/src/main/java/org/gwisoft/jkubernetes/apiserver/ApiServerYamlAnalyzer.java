@@ -61,12 +61,29 @@ public class ApiServerYamlAnalyzer {
 		
 	}
 	
-	public String getToplogyName(){
+	public String getTopologyName(){
 		return (String)getYamlValue(ApiServerConstant.METADATA_NAME);
 	}
 	
 	public Object getYamlValue(String key){
 		return this.getYamlValue(key, yamlMap);
+	}
+	
+	public void setYamlValue(String key,Object value){
+		Map tempMap = yamlMap;
+		
+		String[] keys = key.split("\\.");
+		Object object = null;
+		String lastKey = null;
+		for(String keyNode:keys){
+			if(object != null){
+				tempMap = (Map)object;
+			}
+			object = tempMap.get(keyNode);
+			lastKey = keyNode;
+		}
+		tempMap.put(lastKey,value);
+		
 	}
 	
 	public static Object getYamlValue(String key,Map yamlMap){
@@ -84,5 +101,21 @@ public class ApiServerYamlAnalyzer {
 		}
 		
 		return object;
+	}
+	
+	public static void setYamlValue(String key,Object value,Map yamlMap){
+		Map tempMap = yamlMap;
+		
+		String[] keys = key.split("\\.");
+		Object object = null;
+		String lastKey = null;
+		for(String keyNode:keys){
+			if(object != null){
+				tempMap = (Map)object;
+			}
+			object = tempMap.get(keyNode);
+			lastKey = keyNode;
+		}
+		tempMap.put(lastKey,value);
 	}
 }

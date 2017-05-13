@@ -15,7 +15,7 @@ public class TopologyAssignEvent {
 	private long timestamp = System.currentTimeMillis();
 	
 	public enum AssignType{
-		anewAssign,assign
+		anewAssign,assign,delete
 	}
 	
 	private Map<String, Object> yamlMap;

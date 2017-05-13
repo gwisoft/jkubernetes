@@ -43,9 +43,8 @@ def check_java():
 
 def print_commands():
     """Print all client commands and link to documentation"""
-    print ("kubectl command [-s http://apiserverip:port] [-c key1=value1,key2=value2][command parameter]")
+    print ("kubectl command [-s http://apiserverip:port]")
     print ("Commands:\n\t",  "\n\t".join(sorted(COMMANDS.keys())))
-    print ("\n\t[-c key1=value1,key2=value2]\t\t\t optional, add key=value pair to configuration")
     print ("\nHelp:", "\n\thelp", "\n\thelp <command>")
     print ("\nDocumentation for the jkubernetes client can be found at https://github.com/gwisoft/jkubernetes/wiki/jkubernetes-Chinese-Documentation\n")
 
@@ -149,8 +148,8 @@ def create(args):
 	childopts = get_client_customopts() + get_exclude_jars() + get_client_createopts()
 	print ("childopts=")
 	print (childopts)
-	exec_storm_class(
-        "org.jkubernetes.kubectl.KubectlCreate",
+	exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.kubectl.KubectlCreate",
         jvmtype="-client -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
@@ -165,8 +164,8 @@ def kube(args):
 	childopts = get_client_customopts() + get_exclude_jars()
 	print ("childopts=")
 	print (childopts)
-	exec_storm_class(
-        "org.jkubernetes.daemon.kube.KubeServer",
+	exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.daemon.kube.KubeServer",
         jvmtype="-server -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
@@ -181,12 +180,28 @@ def kubelet(args):
     childopts = get_client_customopts() + get_exclude_jars()
     print ("childopts=")
     print (childopts)
-    exec_storm_class(
-        "org.jkubernetes.daemon.kubelet.Kubelet",
+    exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.daemon.kubelet.Kubelet",
         jvmtype="-server -Xms256m -Xmx256m",
         sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
         args=args,
         childopts=childopts)
+    
+def delete(args):
+    """
+    kubectl kubelet
+    """
+    pass
+    
+    childopts = get_client_customopts() + get_exclude_jars()
+    print ("childopts=")
+    print (childopts)
+    exec_jkubernetes_class(
+        "org.gwisoft.jkubernetes.daemon.kubelet.Kubelet",
+        jvmtype="-server -Xms256m -Xmx256m",
+        sysdirs=[JKUBERNETES_CONF_DIR, JKUBERNETES_DIR + "/bin",CUSTOM_CONF_FILE],
+        args=args,
+        childopts=childopts)    
     	
 def get_client_createopts():
 	ret = (" -Dkubernetes.create.yaml=" + JKUBERNETES_CREATE_YAML_PATH + " -Dkubernetes.apiserver.address=" + API_SERVER_ADDRESS)
@@ -209,7 +224,7 @@ def parse_client_createopts(args):
 	print (args_list)		
 	return 	args_list	
 		
-def exec_storm_class(klass, jvmtype="-server", sysdirs=[], args=[], childopts=""):
+def exec_jkubernetes_class(klass, jvmtype="-server", sysdirs=[], args=[], childopts=""):
     
     args_str = " ".join(args)
 
@@ -221,19 +236,18 @@ def exec_storm_class(klass, jvmtype="-server", sysdirs=[], args=[], childopts=""
 
 #系统自定义的配置入参    
 def get_client_customopts():
+    """
     ret = (" -Dkubernetes.root.logger=INFO,stdout -Dlogback.configurationFile=" + JKUBERNETES_DIR +
            "/conf/client_logback.xml -Dlog4j.configuration=File:" + JKUBERNETES_DIR + 
            "/conf/client_log4j.properties")
+    """       
     return ret
 
 def get_classpath(extrajars):
     ret = []
     ret.extend(extrajars)
-    print (1)
     ret.extend(get_jars_full(JKUBERNETES_DIR))
-    print (2)
     ret.extend(get_jars_full(JKUBERNETES_DIR + "/lib"))
-    ret.extend(get_jars_full(JKUBERNETES_DIR + "/lib/ext"))
     ret.extend(INCLUDE_JARS)
     return normclasspath(":".join(ret))
     
@@ -262,7 +276,7 @@ def main():
 		sys.exit(-1)
 	sys.exit(STATUS)
 
-COMMANDS = {"create": create,"kube":kube,"kubelet":kubelet}
+COMMANDS = {"create": create,"kube":kube,"kubelet":kubelet,"delete":delete,"rolling-update":rolling-update,"replace":replace}
 		        
 if __name__ == "__main__":
     #check_java()

@@ -323,4 +323,34 @@ public class KubernetesZkClusterCoordination implements KubernetesClusterCoordin
 		return kubeletHeartbeats;
 	}
 
+	@Override
+	public void deleteAssignment(String topologyId) {
+		String assignmentPath = KubernetesCluster.getAssignmentPath(topologyId);
+		try {
+			if(zkClusterCoordination.isNodeExisted(assignmentPath, false)){
+				zkClusterCoordination.deleteNode(assignmentPath);
+			}
+			
+		} catch(NoNodeException e){
+			logger.warn("",e);
+		}catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
+	@Override
+	public Assignment getAssignmentByName(String topologyName) {
+		List<String> topolgyIds = getAssignments();
+		Assignment currentTopology = null;
+		for(String topologyId:topolgyIds){
+			Assignment assignment = getAssignment(topologyId);
+			if(assignment != null && assignment.getTopologyName().equals(topologyName)){
+				currentTopology = assignment;
+			}
+		}
+		
+		return currentTopology;
+	}
+
 }

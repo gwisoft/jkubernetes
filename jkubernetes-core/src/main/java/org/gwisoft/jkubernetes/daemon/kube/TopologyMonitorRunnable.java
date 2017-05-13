@@ -29,16 +29,19 @@ public class TopologyMonitorRunnable implements Runnable {
 		try{
 			List<String> assignments = coordination.getAssignments();
 
+			HashMap<String, KubeletHeartbeat> vaildPods = new HashMap<String, KubeletHeartbeat>();
+			List<KubeletHeartbeat> hbs = coordination.getValidKubeletHeartbeats();
+			for(KubeletHeartbeat hb:hbs){
+				vaildPods.put(hb.getKubeletId(), hb);
+			}
+			
 			boolean isAnew = false;
 			for(String topologyId:assignments){
 				
-				HashMap<String, KubeletHeartbeat> vaildPods = new HashMap<String, KubeletHeartbeat>();
-				List<KubeletHeartbeat> hbs = coordination.getValidKubeletHeartbeats();
-				for(KubeletHeartbeat hb:hbs){
-					vaildPods.put(hb.getKubeletId(), hb);
-				}
-				
 				Assignment assignment = coordination.getAssignment(topologyId);
+				
+				updateTopologyState(assignment,vaildPods);
+				
 				Iterator<ResourcePodSlot> iterator = assignment.getPods().iterator();
 				while(iterator.hasNext()){
 					ResourcePodSlot slot = iterator.next();
@@ -73,7 +76,20 @@ public class TopologyMonitorRunnable implements Runnable {
 		}catch(Exception e){
 			logger.error("",e);
 		}
+		
+		
 
+	}
+	
+	public void updateTopologyState(Assignment assignment,HashMap<String, KubeletHeartbeat> vaildPods){
+		for(ResourcePodSlot slot:assignment.getPods()){
+			KubeletHeartbeat hb = vaildPods.get(slot.getKubeletId());
+			if(hb != null && hb.getAvailablePodHeartbeats().get(slot.getPodId()) != null){
+				slot.setState(ResourcePodSlot.AssignmentState.AssignmentSuccess);
+			}		
+		}
+		
+		coordination.setAssignment(assignment);
 	}
 	
 	

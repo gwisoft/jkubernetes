@@ -34,14 +34,16 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 		
 		//reset current old assignment resource
 		Assignment oldAssignment = null;
+		HashMap<String, ResourcePodSlot> keeperDeployed = new HashMap<String, ResourcePodSlot>();
 		if(context.getEvent().getAssignType().equals(TopologyAssignEvent.AssignType.anewAssign)){
 			oldAssignment = coordination.getAssignment(context.getTopologyId());
 			for(KubeletHeartbeat hb:hbs){
 				Set<ResourcePodSlot> pods = oldAssignment.getPods();
 				for(ResourcePodSlot slot:pods){
 					KubeletHeartbeat hb1 = hbMap.get(slot.getKubeletId());
-					if(hb1 != null){
-						hb1.getAvailableWorkerPorts().add(slot.getPodId());
+					if(hb1 != null && hb1.getPodIds().contains(slot.getPodId())){
+						keeperDeployed.put(slot.getKubeletId() + slot.getPodId(), slot);
+						hb1.getUnassignedPodIds().add(slot.getPodId());
 					}
 				}
 			}
@@ -58,7 +60,7 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 				Map.Entry entry = (Map.Entry) iterator.next();
 				KubeletHeartbeat hb = (KubeletHeartbeat)entry.getValue();
 				
-				if(hb.getAvailableWorkerPorts() == null || hb.getAvailableWorkerPorts().size() == 0){
+				if(hb.getUnassignedPodIds() == null || hb.getUnassignedPodIds().size() == 0){
 					continue;
 				}
 				
@@ -67,7 +69,7 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 					continue;
 				}
 				
-				if(hb.getAvailableWorkerPorts().size() > maxWeight.getAvailableWorkerPorts().size()){
+				if(hb.getUnassignedPodIds().size() > maxWeight.getUnassignedPodIds().size()){
 					maxWeight = hb;
 				}
 			}
@@ -76,17 +78,25 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 				throw new BusinessException("not vaild resource!");
 			}
 			
-			ResourcePodSlot slot = new ResourcePodSlot();
-			Iterator<Integer> iterable = maxWeight.getAvailableWorkerPorts().iterator();
-			Integer podId = iterable.next();
-			slot.setPodId(podId);
-			slot.setHostname(maxWeight.getHostName());
-			slot.setState(ResourcePodSlot.AssignmentState.Assignmenting);
-			slot.setTopologyId(context.getTopologyId());
-			slot.setTimestamp(context.getEvent().getTimestamp());
-			slot.setKubeletId(maxWeight.getKubeletId());
-			maxWeight.getAvailableWorkerPorts().remove(podId);
-			assigned.add(slot);
+			// balance keeper old slot
+			ResourcePodSlot oldSlot = keeperDeployed.get(maxWeight.getKubeletId());
+			if(oldSlot == null){
+				ResourcePodSlot slot = new ResourcePodSlot();
+				Iterator<Integer> iterable = maxWeight.getUnassignedPodIds().iterator();
+				Integer podId = iterable.next();
+				slot.setPodId(podId);
+				slot.setHostname(maxWeight.getHostName());
+				slot.setState(ResourcePodSlot.AssignmentState.Assignmenting);
+				slot.setTopologyId(context.getTopologyId());
+				slot.setTimestamp(context.getEvent().getTimestamp());
+				slot.setKubeletId(maxWeight.getKubeletId());
+				maxWeight.getUnassignedPodIds().remove(podId);
+				assigned.add(slot);
+			}else{
+				keeperDeployed.remove(oldSlot.getKubeletId() + oldSlot.getPodId());
+				assigned.add(oldSlot);
+			}
+			
 		}
 
 		return assigned;

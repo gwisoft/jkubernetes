@@ -15,17 +15,28 @@ public class Assignment implements Serializable {
 	private final Set<ResourcePodSlot> pods;
 	
 	private String topologyId;
+	
+	private String topologyName;
 
 	private Map<String,Object> yamlMap;
 	
 	//assignment timestamp
 	private long timestamp;
 	
-	public Assignment(String topologyId,Set<ResourcePodSlot> pods,Map yamlMap,long timestamp){
+	public String getTopologyName() {
+		return topologyName;
+	}
+
+	public void setTopologyName(String topologyName) {
+		this.topologyName = topologyName;
+	}
+
+	public Assignment(String topologyId,String topolgyName,Set<ResourcePodSlot> pods,Map yamlMap,long timestamp){
 		this.topologyId = topologyId;
 		this.pods = pods;
 		this.yamlMap = yamlMap;
 		this.timestamp = timestamp;
+		this.topologyName = topolgyName;
 	}
 
 	public ResourcePodSlot.AssignmentState getState(){

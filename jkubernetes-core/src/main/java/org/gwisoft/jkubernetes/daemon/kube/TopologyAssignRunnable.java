@@ -2,6 +2,7 @@ package org.gwisoft.jkubernetes.daemon.kube;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -10,7 +11,6 @@ import org.apache.commons.io.FileUtils;
 import org.gwisoft.jkubernetes.cluster.KubernetesCluster;
 import org.gwisoft.jkubernetes.cluster.KubernetesClusterCoordination;
 import org.gwisoft.jkubernetes.config.KubernetesConfig;
-import org.gwisoft.jkubernetes.config.KubernetesConfigConstant;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.schedule.Assignment;
@@ -56,32 +56,58 @@ public class TopologyAssignRunnable implements Runnable {
 	}
 
 	public void doTopologyAssign(TopologyAssignEvent event){
+		if(event.getAssignType().equals(TopologyAssignEvent.AssignType.anewAssign)
+				|| event.getAssignType().equals(TopologyAssignEvent.AssignType.assign)){
+			assign(event);
+		}else if(event.getAssignType().equals(TopologyAssignEvent.AssignType.delete)){
+			deleteAssign(event);
+		}
+	}
+	
+	public void deleteAssign(TopologyAssignEvent event){
+		try{
+			Assignment assignment = coordination.getAssignmentByName(event.getTopologyName());
+			if(assignment == null){
+				throw new BusinessException("topolgy name:" + event.getTopologyName() + " is not exist!");
+			}
+			coordination.deleteAssignment(assignment.getTopologyId());
+			deleteMasterAssignmentLocalInfo(assignment);
+			event.done();
+		}catch(Throwable e){
+			logger.error("",e);
+			event.fail(e.getMessage());
+		}
+	}
+	
+	public void assign(TopologyAssignEvent event){
 		try{
 			Set<ResourcePodSlot> assignments = null;
 			TopologyAssignContext context = prepareTopologyAssign(event);
 			IToplogyScheduler scheduler = new DefaultTopologyScheduler();
 			assignments = scheduler.assignTasks(context);
-			Assignment assignment = null;
-			if(assignments != null && assignments.size() > 0){
-				assignment = new Assignment(event.getTopologyId(),assignments,event.getYamlMap(),event.getTimestamp());
-				coordination.setAssignment(assignment);
-				saveMasterAssignmentLocalInfo(assignment);
-				event.done();
-			}else{
-				throw new RuntimeException("not resource assignment");
-			}
+			Assignment assignment = new Assignment(event.getTopologyId(),event.getTopologyName(),assignments,event.getYamlMap(),event.getTimestamp());
+			coordination.setAssignment(assignment);
+			saveMasterAssignmentLocalInfo(assignment);
+			event.done();
 
 		}catch(Throwable e){
 			logger.error("",e);
 			event.fail(e.getMessage());
 		}
-		
 	}
 	
 	public void saveMasterAssignmentLocalInfo(Assignment assignment){
 		String localDistDir = KubernetesConfig.getMasterAssignmentLocalPath();
 		try {
 			FileUtils.forceMkdir(new File(localDistDir + File.separator + assignment.getTopologyId()));
+		} catch (IOException e) {
+			throw new BusinessException(e);
+		}
+	}
+	public void deleteMasterAssignmentLocalInfo(Assignment assignment){
+		String localDistDir = KubernetesConfig.getMasterAssignmentLocalPath();
+		try {
+			FileUtils.forceDelete(new File(localDistDir + File.separator + assignment.getTopologyId()));
 		} catch (IOException e) {
 			throw new BusinessException(e);
 		}
