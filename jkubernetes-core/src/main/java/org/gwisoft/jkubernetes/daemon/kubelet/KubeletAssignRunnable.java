@@ -17,9 +17,15 @@ import org.gwisoft.jkubernetes.cluster.KubernetesClusterCoordination;
 import org.gwisoft.jkubernetes.config.KubernetesConfig;
 import org.gwisoft.jkubernetes.config.KubernetesConfigConstant;
 import org.gwisoft.jkubernetes.config.KubernetesConfigLoad;
+import org.gwisoft.jkubernetes.daemon.pod.Pod;
 import org.gwisoft.jkubernetes.daemon.pod.PodHeartbeat;
+import org.gwisoft.jkubernetes.daemon.pod.PodLocalState;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 import org.gwisoft.jkubernetes.daemon.pod.StatePodHeartbeat;
+import org.gwisoft.jkubernetes.docker.KubernetesDocker;
+import org.gwisoft.jkubernetes.docker.KubernetesDockerFactory;
+import org.gwisoft.jkubernetes.docker.ResourcePodSlotCommand;
+import org.gwisoft.jkubernetes.docker.ResourcePodSlotDocker;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.schedule.Assignment;
 import org.gwisoft.jkubernetes.utils.DateUtils;
@@ -28,6 +34,9 @@ import org.gwisoft.jkubernetes.utils.KubernetesUtils;
 import org.gwisoft.jkubernetes.utils.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 
 public class KubeletAssignRunnable implements Runnable {
@@ -57,7 +66,7 @@ public class KubeletAssignRunnable implements Runnable {
 				
 				Integer interval = KubernetesConfig.getPodHeartbeatIntervalMs();
 				Thread.sleep(interval);
-			}catch(Exception e){
+			}catch(Throwable e){
 				logger.error("",e);
 			}
 		}
@@ -175,16 +184,51 @@ public class KubeletAssignRunnable implements Runnable {
 	
 	public void launchPod(ResourcePodSlot slot) throws IOException {
 
+		if (slot instanceof ResourcePodSlotDocker) {
+			ResourcePodSlotDocker slotDocker = (ResourcePodSlotDocker) slot;
+			launchDockerPod(slotDocker);
+		}else if(slot instanceof ResourcePodSlotCommand){
+			ResourcePodSlotCommand slotCommand = (ResourcePodSlotCommand)slot;
+			launchCommandPod(slotCommand);
+		}else{
+			launchJavaThreadPod(slot);
+		}
+	}
+	
+	public void launchDockerPod(ResourcePodSlotDocker slot) throws IOException{
+		KubernetesDocker docker = KubernetesDockerFactory.getInstance();
+		docker.startContainer(slot);
+	}
+	
+	public void launchCommandPod(ResourcePodSlotCommand slot) throws IOException{
+		ExecCommandUtils.ExecCommandASynCallBack callBack = new ExecCommandUtils.ExecCommandASynCallBack(){
+			@Override
+			public void callBackPid(Integer pid) {
+				if(pid != null){
+					String pidsDir = KubernetesConfig.getLocalPodPidsDir(slot.getPodId());
+					KubernetesUtils.savePid(pidsDir, pid.toString());
+					
+					//save initial heartbeat
+					int timeSecs = DateUtils.getCurrentTimeSecs();
+					PodHeartbeat podHeartbeat = new PodHeartbeat(
+							timeSecs, slot.getTopologyId(), 
+							slot.getPodId(),slot.getKubeletId(),ResourcePodSlot.PodType.command);
+					PodLocalState.setPodHeartbeat(podHeartbeat);
+				}
+			}
+		};
+		
+		ExecCommandUtils.launchProcess(slot.getRunCommand(), new HashMap<String, String>(), callBack);
+	}
+	
+	public void launchJavaThreadPod(ResourcePodSlot slot) throws IOException{
 		Map totalConf = KubernetesConfig.getKubernetesconfig();
-		String kubernetesHome = System.getProperty("kubernetes.home");
-		if (StringUtils.isBlank(kubernetesHome)) {
-			kubernetesHome = "./";
-		} 
 
 		Map<String, String> environment = new HashMap<String, String>();
-		environment.put("kubernetes.home", kubernetesHome);
 		
-		String launcherCmd = getLauncherParameter(slot,kubernetesHome);
+		setPodEnvironment(slot,environment);
+		
+		String launcherCmd = getLauncherParameter(slot);
 		
 		String podCmd = getPodParameter(slot);
 		String cmd = launcherCmd + " " + podCmd;
@@ -195,10 +239,22 @@ public class KubeletAssignRunnable implements Runnable {
 		ExecCommandUtils.launchProcess(cmd, environment, true);
 	}
 	
-	public String getLauncherParameter(ResourcePodSlot slot,String kubernetesHome) throws IOException {
+	public String getLauncherParameter(ResourcePodSlot slot) throws IOException {
     	
     	return "";
     }
+	
+	public void setPodEnvironment(ResourcePodSlot slot,Map<String, String> environment){
+		String kubernetesHome = System.getProperty("kubernetes.home");
+		if (StringUtils.isBlank(kubernetesHome)) {
+			kubernetesHome = "./";
+		} 
+		environment.put("kubernetes.home", kubernetesHome);
+		
+		Gson gson = new GsonBuilder().create();
+		String json = gson.toJson(slot);
+		environment.put(Pod.RESOURCE_POD_SLOT, json);
+	}
 	
 	public String getPodMemParameter(ResourcePodSlot slot){
 		return "";
@@ -219,11 +275,6 @@ public class KubeletAssignRunnable implements Runnable {
         commandSB.append(classpath);
 
         commandSB.append(" org.gwisoft.jkubernetes.daemon.pod.Pod ");
-        
-        commandSB.append(slot.getTopologyId());
-        commandSB.append(" ").append(slot.getKubeletId());
-        commandSB.append(" ").append(slot.getPodId());
-        commandSB.append(" ").append(slot.getContainerIds());
         
         return commandSB.toString();
 
@@ -273,7 +324,7 @@ public class KubeletAssignRunnable implements Runnable {
 			Map<Integer, ResourcePodSlot> localZkAssignments){
 		Iterator<Map.Entry<Integer, StatePodHeartbeat>> hbIterator = podHbMappodHbMap.entrySet().iterator();
 		Set<Integer> keepPodIds = new HashSet<>();
-		Set<Integer> killPodIds = new HashSet<>();
+		Set<StatePodHeartbeat> killPodIds = new HashSet<>();
 		while(hbIterator.hasNext()){
 			Map.Entry<Integer, StatePodHeartbeat> hbEntry = hbIterator.next();
 			StatePodHeartbeat shb = hbEntry.getValue();
@@ -283,7 +334,7 @@ public class KubeletAssignRunnable implements Runnable {
 					&& shb.getPodHb().getTopologyId().equals(slot.getTopologyId())){
 				keepPodIds.add(hbEntry.getKey());
 			}else{
-				killPodIds.add(hbEntry.getKey());
+				killPodIds.add(hbEntry.getValue());
 			}
 
 		}
@@ -292,14 +343,27 @@ public class KubeletAssignRunnable implements Runnable {
 		return keepPodIds;
 	}
 	
-	private void shutPod(Set<Integer> killPodIds){
-		for(Integer podId:killPodIds){
-			List<String> pids = KubeletLocalState.getPodPids(podId);
-			for (String pid : pids) {
-                KubernetesUtils.kill(pid);
-            }
-			KubeletLocalState.cleanupPidsByPodId(podId);
-			KubeletLocalState.cleanupInvalidPodHb(podId);
+	private void shutPod(Set<StatePodHeartbeat> killPodIds){
+		for(StatePodHeartbeat podHB:killPodIds){
+			List<String> pids = KubeletLocalState.getPodPids(podHB.getPodHb().getPodId());
+			
+			if(podHB.getPodHb().getPodType().equals(ResourcePodSlot.PodType.java_thread)){
+				for (String pid : pids) {
+	                KubernetesUtils.kill(pid);
+	            }
+			}else if(podHB.getPodHb().getPodType().equals(ResourcePodSlot.PodType.docker)){
+				KubernetesDocker kubernetesDocker = KubernetesDockerFactory.getInstance();
+				for (String pid : pids) {
+					kubernetesDocker.stopContainer(pid);
+				}
+			}else if(podHB.getPodHb().getPodType().equals(ResourcePodSlot.PodType.command)){
+				for (String pid : pids) {
+	                KubernetesUtils.kill(pid);
+	            }
+			}
+			
+			KubeletLocalState.cleanupPidsByPodId(podHB.getPodHb().getPodId());
+			KubeletLocalState.cleanupInvalidPodHb(podHB.getPodHb().getPodId());
 		}
 	}
 	

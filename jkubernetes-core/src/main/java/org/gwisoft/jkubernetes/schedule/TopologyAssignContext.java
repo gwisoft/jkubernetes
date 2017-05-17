@@ -2,12 +2,13 @@ package org.gwisoft.jkubernetes.schedule;
 
 import java.util.Map;
 
+import org.gwisoft.jkubernetes.apiserver.yaml.ApiServerYaml;
 import org.gwisoft.jkubernetes.daemon.kube.TopologyAssignEvent;
 
 public class TopologyAssignContext {
 
 	private String topologyId;
-	private Map yamlMap;
+	private ApiServerYaml apiServerYaml;
 	private TopologyAssignEvent event;
 
 	public String getTopologyId() {
@@ -18,12 +19,12 @@ public class TopologyAssignContext {
 		this.topologyId = topologyId;
 	}
 
-	public Map getYamlMap() {
-		return yamlMap;
+	public ApiServerYaml getApiServerYaml() {
+		return apiServerYaml;
 	}
 
-	public void setYamlMap(Map yamlMap) {
-		this.yamlMap = yamlMap;
+	public void setApiServerYaml(ApiServerYaml apiServerYaml) {
+		this.apiServerYaml = apiServerYaml;
 	}
 
 	public TopologyAssignEvent getEvent() {

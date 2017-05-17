@@ -32,12 +32,15 @@ public class KubernetesCluster {
 	* @return
 	 */
 	public static KubernetesClusterCoordination instanceCoordination(){
-		if(coordination != null){
-			return coordination;
-		}else{
-			coordination = new KubernetesZkClusterCoordination();
-			return coordination;
+		if(coordination == null){
+			synchronized (KubernetesCluster.class) {
+				if(coordination == null){
+					coordination = new KubernetesZkClusterCoordination();
+				}
+			}
 		}
+		
+		return coordination;
 	}
 	
 	public static String getAssignmentPath(String topologyId){

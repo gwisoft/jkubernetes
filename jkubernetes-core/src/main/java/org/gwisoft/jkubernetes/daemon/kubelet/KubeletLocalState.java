@@ -14,8 +14,11 @@ import org.gwisoft.jkubernetes.config.KubernetesConfigLoad;
 import org.gwisoft.jkubernetes.daemon.pod.PodHeartbeat;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 import org.gwisoft.jkubernetes.daemon.pod.StatePodHeartbeat;
+import org.gwisoft.jkubernetes.docker.KubernetesDocker;
+import org.gwisoft.jkubernetes.docker.KubernetesDockerFactory;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.utils.DateUtils;
+import org.gwisoft.jkubernetes.utils.ExecCommandUtils;
 import org.gwisoft.jkubernetes.utils.KubernetesUtils;
 import org.gwisoft.jkubernetes.utils.PathUtils;
 import org.gwisoft.jkubernetes.utils.SerializeUtils;
@@ -64,16 +67,45 @@ public class KubeletLocalState {
 					byte[] podHbByte = FileUtils.readFileToByteArray(file);
 					
 					PodHeartbeat podHb = (PodHeartbeat)SerializeUtils.javaDeserialize(podHbByte);
-					StatePodHeartbeat.PodState podState;
-					if(DateUtils.getCurrentTimeSecs() - podHb.getTimeSecs() > 
-						(int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_KUBELET_POD_HEARTBEAT_TIMEOUT_SECS)){
+					StatePodHeartbeat.PodState podState = null;
+					
+					if(podHb.getPodType().equals(ResourcePodSlot.PodType.java_thread)){
+						if(DateUtils.getCurrentTimeSecs() - podHb.getTimeSecs() > 
+							(int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_KUBELET_POD_HEARTBEAT_TIMEOUT_SECS)){
+							podState = StatePodHeartbeat.PodState.timeout;
+						}else{
+							podState = StatePodHeartbeat.PodState.valid;
+						}
+					}else if(podHb.getPodType().equals(ResourcePodSlot.PodType.command)){
+						List<String> pids = KubeletLocalState.getPodPids(Integer.valueOf(podId));
 						podState = StatePodHeartbeat.PodState.timeout;
+						for(String pid:pids){
+							boolean isExistRunning = ExecCommandUtils.isExistPidRunning(pid);
+							if(isExistRunning){
+								podState = StatePodHeartbeat.PodState.valid;
+							}else{
+								podState = StatePodHeartbeat.PodState.timeout;
+							}
+						}
+					}else if(podHb.getPodType().equals(ResourcePodSlot.PodType.docker)){
+						KubernetesDocker docker = KubernetesDockerFactory.getInstance();
+						List<String> pids = KubeletLocalState.getPodPids(Integer.valueOf(podId));
+						podState = StatePodHeartbeat.PodState.timeout;
+						for(String pid:pids){
+							boolean isExistRunning = docker.isRunningContainer(pid);
+							if(isExistRunning){
+								podState = StatePodHeartbeat.PodState.valid;
+							}else{
+								podState = StatePodHeartbeat.PodState.timeout;
+							}
+						}
 					}else{
-						podState = StatePodHeartbeat.PodState.valid;
+						throw new BusinessException("Pod type error,correct range(" + ResourcePodSlot.PodType.values() + ")");
 					}
 					
 					StatePodHeartbeat sHb = new StatePodHeartbeat(podHb,podState);
 					statePodHbs.put(podHb.getPodId(), sHb);
+					
 				}
 				
 			} catch (IOException e) {

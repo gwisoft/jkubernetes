@@ -142,25 +142,27 @@ public class KubernetesZkClusterCoordination implements KubernetesClusterCoordin
 	@Override
 	public boolean registerCurrentKubeToSlave() {
 		try{
+			if(!zkClusterCoordination.isNodeExisted(KubernetesCluster.KUBE_SLAVE_SUBTREE, false)){
+				zkClusterCoordination.mkdirs(PathUtils.getParentPath(KubernetesCluster.KUBE_SLAVE_SUBTREE), CreateMode.PERSISTENT);
+			}
 			zkClusterCoordination.createNode(
 					KubernetesCluster.KUBE_SLAVE_SUBTREE + 
 					KubernetesCluster.ZK_SEPERATOR + 
 					hostPort, null, CreateMode.EPHEMERAL);
 			
+			
+			
 			byte[] slaveDetails = zkClusterCoordination.getData(KubernetesCluster.KUBE_SLAVE_DETAIL_SUBTREE + 
 					KubernetesCluster.ZK_SEPERATOR + 
 					hostPort , false);
-			
 			Map map = null;
 			if(slaveDetails == null){
 				map = (Map)SerializeUtils.javaDeserialize(slaveDetails);
 			}else{
 				map = new HashMap<Object,Object>();
 			}
-			
 			List<String> Assdiff = getAssignmentDiffFromLocalAndCluster();
 			map.put(FollowerRunnable.KUBE_DIFFER_COUNT_ZK, Assdiff.size());
-			
 			setData(KubernetesCluster.KUBE_SLAVE_DETAIL_SUBTREE + 
 					KubernetesCluster.ZK_SEPERATOR + 
 					hostPort, SerializeUtils.javaSerialize(map));

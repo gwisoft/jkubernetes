@@ -283,7 +283,7 @@ def exec_jkubernetes_class(klass, jvmtype="-server", sysdirs=[], args=[], childo
     
     args_str = " ".join(args)
         
-    command = "java " + " -Dkubernetes.home=" + JKUBERNETES_DIR + " " + get_config_opts() + " " + childopts + " -cp " + get_classpath(sysdirs) + " " + klass + " " + args_str
+    command = "java " + " -Dkubernetes.home=" + JKUBERNETES_DIR + " " + get_config_opts() + " " + childopts + " -cp " + get_classpath(sysdirs) + " " + klass + " " + args_str + " 2>&1"
     
     print ("Running: " + command)
     global STATUS

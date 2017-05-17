@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.gwisoft.jkubernetes.apiserver.yaml.ApiServerYaml;
+
 public class TopologyAssignEvent {
 
 	private String topologyId;
@@ -18,7 +20,7 @@ public class TopologyAssignEvent {
 		anewAssign,assign,delete
 	}
 	
-	private Map<String, Object> yamlMap;
+	private ApiServerYaml apiServerYaml;
 	
 	private CountDownLatch latch = new CountDownLatch(1);
 	
@@ -45,12 +47,12 @@ public class TopologyAssignEvent {
 		this.topologyId = topologyId;
 	}
 
-	public Map<String, Object> getYamlMap() {
-		return yamlMap;
+	public ApiServerYaml getApiServerYaml() {
+		return apiServerYaml;
 	}
 
-	public void setYamlMap(Map<String, Object> yamlMap) {
-		this.yamlMap = yamlMap;
+	public void setApiServerYaml(ApiServerYaml apiServerYaml) {
+		this.apiServerYaml = apiServerYaml;
 	}
 
 	public String getTopologyName() {
@@ -104,8 +106,11 @@ public class TopologyAssignEvent {
 	@Override
 	public String toString() {
 		return "TopologyAssignEvent [topologyId=" + topologyId + ", topologyName=" + topologyName + ", assignType="
-				+ assignType + ", timestamp=" + timestamp + ", yamlMap=" + yamlMap + "]";
+				+ assignType + ", timestamp=" + timestamp + ", apiServerYaml=" + apiServerYaml + ", latch=" + latch
+				+ ", isSuccess=" + isSuccess + ", errorMsg=" + errorMsg + "]";
 	}
+
+	
 	
 	
 	

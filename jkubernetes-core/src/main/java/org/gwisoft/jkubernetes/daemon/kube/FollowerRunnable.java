@@ -63,7 +63,7 @@ public class FollowerRunnable implements Runnable {
 				}
 					
 
-			}catch(Exception e){
+			}catch(Throwable e){
 				logger.error("Unknow exception",e);
 			}
 		}

@@ -1,7 +1,6 @@
 package org.gwisoft.jkubernetes.daemon.pod;
 
 import java.io.Serializable;
-import java.util.Set;
 
 public class PodHeartbeat implements Serializable {
 
@@ -9,18 +8,26 @@ public class PodHeartbeat implements Serializable {
 	
 	private int timeSecs;
     private String topologyId;
-    private Set<Integer> containerIds;
     private Integer podId;
     private String kubeletId;
+    private ResourcePodSlot.PodType podType;
     
-    public PodHeartbeat(int timeSecs,String topologyId,Set<Integer> containerIds,Integer podId,String kubeletId){
+    public PodHeartbeat(int timeSecs,String topologyId,Integer podId,String kubeletId,ResourcePodSlot.PodType podType){
     	this.timeSecs = timeSecs;
     	this.topologyId = topologyId;
-    	this.containerIds = containerIds;
     	this.podId = podId;
     	this.kubeletId = kubeletId;
+    	this.podType = podType;
     }
     
+	public ResourcePodSlot.PodType getPodType() {
+		return podType;
+	}
+
+	public void setPodType(ResourcePodSlot.PodType podType) {
+		this.podType = podType;
+	}
+
 	public String getKubeletId() {
 		return kubeletId;
 	}
@@ -40,12 +47,6 @@ public class PodHeartbeat implements Serializable {
 	}
 	public void setTopologyId(String topologyId) {
 		this.topologyId = topologyId;
-	}
-	public Set<Integer> getContainerIds() {
-		return containerIds;
-	}
-	public void setContainerIds(Set<Integer> containerIds) {
-		this.containerIds = containerIds;
 	}
 	public Integer getPodId() {
 		return podId;

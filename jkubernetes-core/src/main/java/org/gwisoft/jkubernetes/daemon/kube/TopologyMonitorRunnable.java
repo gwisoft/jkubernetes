@@ -56,8 +56,8 @@ public class TopologyMonitorRunnable implements Runnable {
 				if(isAnew){
 					TopologyAssignEvent assignEvent = new TopologyAssignEvent();
 			        assignEvent.setTopologyId(topologyId);
-			        assignEvent.setTopologyName((String)ApiServerYamlAnalyzer.getYamlValue(ApiServerConstant.METADATA_NAME,assignment.getYamlMap()));
-			        assignEvent.setYamlMap(assignment.getYamlMap());
+			        assignEvent.setTopologyName(assignment.getTopologyName());
+			        assignEvent.setApiServerYaml(assignment.getApiServerYaml());
 			        assignEvent.setAssignType(TopologyAssignEvent.AssignType.anewAssign);
 
 			        TopologyAssignRunnable.push(assignEvent);
@@ -73,7 +73,7 @@ public class TopologyMonitorRunnable implements Runnable {
 			
 			Integer interval = KubernetesConfig.getPodHeartbeatIntervalMs();
 			Thread.sleep(interval);
-		}catch(Exception e){
+		}catch(Throwable e){
 			logger.error("",e);
 		}
 		

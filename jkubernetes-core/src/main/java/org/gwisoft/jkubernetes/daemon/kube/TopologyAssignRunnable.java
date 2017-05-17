@@ -38,19 +38,25 @@ public class TopologyAssignRunnable implements Runnable {
 		logger.info("TopologyAssignRunnable thread has bean started");
 		
 		while(!shutdown.get()){
-			TopologyAssignEvent event;
-			try {
-				event = queue.take();
-				logger.info("*************read topology assign event:" + event.toString() + "****************");
-			} catch (InterruptedException e) {
-				continue;
+			try{
+				TopologyAssignEvent event;
+				try {
+					event = queue.take();
+					logger.info("*************read topology assign event:" + event.toString() + "****************");
+				} catch (InterruptedException e) {
+					continue;
+				}
+				
+				if(event == null){
+					continue;
+				}
+				
+				doTopologyAssign(event);
+			}catch(Throwable e){
+				logger.error("",e);
 			}
 			
-			if(event == null){
-				continue;
-			}
 			
-			doTopologyAssign(event);
 		}
 
 	}
@@ -85,7 +91,7 @@ public class TopologyAssignRunnable implements Runnable {
 			TopologyAssignContext context = prepareTopologyAssign(event);
 			IToplogyScheduler scheduler = new DefaultTopologyScheduler();
 			assignments = scheduler.assignTasks(context);
-			Assignment assignment = new Assignment(event.getTopologyId(),event.getTopologyName(),assignments,event.getYamlMap(),event.getTimestamp());
+			Assignment assignment = new Assignment(event.getTopologyId(),event.getTopologyName(),assignments,event.getApiServerYaml(),event.getTimestamp());
 			coordination.setAssignment(assignment);
 			saveMasterAssignmentLocalInfo(assignment);
 			event.done();
@@ -116,7 +122,7 @@ public class TopologyAssignRunnable implements Runnable {
 	public TopologyAssignContext prepareTopologyAssign(TopologyAssignEvent event){
 		TopologyAssignContext context = new TopologyAssignContext();
 		context.setTopologyId(event.getTopologyId());
-		context.setYamlMap(event.getYamlMap());
+		context.setApiServerYaml(event.getApiServerYaml());
 		context.setEvent(event);
 		return context;
 	}

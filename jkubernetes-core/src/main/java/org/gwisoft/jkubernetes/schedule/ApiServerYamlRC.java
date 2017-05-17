@@ -9,11 +9,14 @@ import java.util.Set;
 
 import org.gwisoft.jkubernetes.apiserver.ApiServerConstant;
 import org.gwisoft.jkubernetes.apiserver.ApiServerYamlAnalyzer;
+import org.gwisoft.jkubernetes.apiserver.yaml.PodContainer;
 import org.gwisoft.jkubernetes.cluster.KubernetesCluster;
 import org.gwisoft.jkubernetes.cluster.KubernetesClusterCoordination;
 import org.gwisoft.jkubernetes.daemon.kube.TopologyAssignEvent;
 import org.gwisoft.jkubernetes.daemon.kubelet.KubeletHeartbeat;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
+import org.gwisoft.jkubernetes.docker.ResourcePodSlotCommand;
+import org.gwisoft.jkubernetes.docker.ResourcePodSlotDocker;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 
 public class ApiServerYamlRC extends AbstractApiServerYaml {
@@ -52,7 +55,7 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 		
 		Set<ResourcePodSlot> assigned = new HashSet<ResourcePodSlot>();
 		KubeletHeartbeat maxWeight;
-		Integer taskNum = (Integer)ApiServerYamlAnalyzer.getYamlValue(ApiServerConstant.SPEC_REPLICAS, context.getYamlMap());
+		Integer taskNum = context.getApiServerYaml().getSpec().getReplicas();
 		for(int i = 0 ;i < taskNum;i++){
 			maxWeight = null;
 			Iterator iterator = hbMap.entrySet().iterator();
@@ -81,7 +84,18 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 			// balance keeper old slot
 			ResourcePodSlot oldSlot = keeperDeployed.get(maxWeight.getKubeletId());
 			if(oldSlot == null){
-				ResourcePodSlot slot = new ResourcePodSlot();
+				ResourcePodSlot slot = null;
+				if(getPodType().equals(ResourcePodSlot.PodType.docker)){
+					ResourcePodSlotDocker dockerSlot = new ResourcePodSlotDocker();
+					dockerSlot.setTemplateSpec(context.getApiServerYaml().getSpec().getTemplate().getSpec());
+					slot = dockerSlot;
+				}else{
+					ResourcePodSlotCommand commandSlot = new ResourcePodSlotCommand();
+					String command = context.getApiServerYaml().getSpec().getTemplate().getSpec().getCommand();
+					commandSlot.setRunCommand(command);
+					slot = commandSlot;
+				}
+				
 				Iterator<Integer> iterable = maxWeight.getUnassignedPodIds().iterator();
 				Integer podId = iterable.next();
 				slot.setPodId(podId);
@@ -102,5 +116,20 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 		return assigned;
 		
 	}
+	
+	public ResourcePodSlot.PodType getPodType(){
+		List<PodContainer> containers = context.getApiServerYaml().getSpec().getTemplate().getSpec().getContainers();
+		if(containers != null){
+			return ResourcePodSlot.PodType.docker;
+		}
+		
+		String command = context.getApiServerYaml().getSpec().getTemplate().getSpec().getCommand();
+		if(command != null && !command.isEmpty()){
+			return ResourcePodSlot.PodType.command;
+		}
+		
+		throw new BusinessException("nonsupport pod type (support type:" + ResourcePodSlot.PodType.values() +")");
+	}
+	
 
 }

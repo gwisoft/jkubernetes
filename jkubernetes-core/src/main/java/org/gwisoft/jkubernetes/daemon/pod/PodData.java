@@ -16,25 +16,13 @@ public class PodData {
 	private String topologyId;
 	private String kubeletId;
 	private Integer podId;
-	private String image;
-	private Set<Integer> containerIds;
+	private ResourcePodSlot slot;
 	
-	private KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();;
-	
-	public PodData(String topologyId,String kubeletId,Integer podId,String image){
+	public PodData(String topologyId,String kubeletId,Integer podId,ResourcePodSlot slot){
 		this.topologyId = topologyId;
 		this.kubeletId = kubeletId;
 		this.podId = podId;
-		this.image = image;
-		
-		Assignment assignment = coordination.getAssignment(topologyId);
-		if (assignment == null) {
-            String errMsg = "Failed to get Assignment of " + topologyId;
-            logger.error(errMsg);
-            throw new RuntimeException(errMsg);
-        }
-		
-		containerIds = assignment.getCurrentPodContainerIds(kubeletId, podId);
+		this.slot = slot;
 	}
 	public String getTopologyId() {
 		return topologyId;
@@ -54,18 +42,14 @@ public class PodData {
 	public void setPodId(Integer podId) {
 		this.podId = podId;
 	}
-	public String getImage() {
-		return image;
+	public ResourcePodSlot getSlot() {
+		return slot;
 	}
-	public void setImage(String image) {
-		this.image = image;
+	public void setSlot(ResourcePodSlot slot) {
+		this.slot = slot;
 	}
-	public Set<Integer> getContainerIds() {
-		return containerIds;
-	}
-	public void setContainerIds(Set<Integer> containerIds) {
-		this.containerIds = containerIds;
-	}
+
+	
 	
 	
 }

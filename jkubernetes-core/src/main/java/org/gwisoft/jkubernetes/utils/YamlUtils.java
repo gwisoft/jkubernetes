@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.gwisoft.jkubernetes.apiserver.yaml.ApiServerYaml;
 import org.yaml.snakeyaml.Yaml;
 
 public class YamlUtils {
@@ -70,6 +71,14 @@ public class YamlUtils {
 		Yaml yaml = new Yaml();
 		InputStream is = new ByteArrayInputStream(yamlByte);
 		Map ret = (Map)yaml.load(new InputStreamReader(is));
+		
+		return ret;
+	}
+	
+	public static <T> T YamlToObject(byte[] yamlByte,Class<T> type){
+		Yaml yaml = new Yaml();
+		InputStream is = new ByteArrayInputStream(yamlByte);
+		T ret = yaml.loadAs(is, type);
 		
 		return ret;
 	}

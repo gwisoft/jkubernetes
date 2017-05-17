@@ -152,12 +152,6 @@ public class KubernetesUtils {
 			throw new RuntimeException("pids dir: " + pidsDir + " isn't directory");
 		}
 		
-		String[] existPids = file.list();
-		for(String existPid:existPids){
-			KubernetesUtils.kill(existPid);
-			PathUtils.rmPath(pidsDir + File.separator + existPid);
-		}
-		
 		String pid = KubernetesUtils.getProcessPid();
 		
 		String pidPath = pidsDir + File.separator + pid;
@@ -169,5 +163,24 @@ public class KubernetesUtils {
 			throw new BusinessException("failed to create pid:" + pidPath,e);
 		}
 	}
+	
+	public static String savePid(String pidsDir,String pid){
+		File file = new File(pidsDir);
+		if(!file.exists()){
+			file.mkdir();
+		}else if(!file.isDirectory()){
+			throw new RuntimeException("pids dir: " + pidsDir + " isn't directory");
+		}
+
+		String pidPath = pidsDir + File.separator + pid;
+		try {
+			FileUtils.touch(new File(pidPath));
+			return pid;
+		} catch (IOException e) {
+			logger.error("failed to create pid:" + pidPath,e);
+			throw new BusinessException("failed to create pid:" + pidPath,e);
+		}
+	}
+
 
 }

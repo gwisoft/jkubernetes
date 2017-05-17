@@ -10,10 +10,9 @@ public class ResourcePodSlot extends PodSlot implements Serializable{
 	private String hostname;
     private long memSize;
     private int cpu;
-    private String jvm;
-    private Set<Integer> containerIds;
     private AssignmentState state;
     private String topologyId;
+    private PodType podType;
     
     //assignment timestamp
     private long timestamp;
@@ -21,7 +20,17 @@ public class ResourcePodSlot extends PodSlot implements Serializable{
 	public enum AssignmentState{
 		Assignmenting,AssignmentFail,AssignmentSuccess
 	}
+	
+	public enum PodType{
+		command,docker,java_thread
+	}
     
+	public PodType getPodType() {
+		return podType;
+	}
+	public void setPodType(PodType podType) {
+		this.podType = podType;
+	}
 	public long getTimestamp() {
 		return timestamp;
 	}
@@ -34,12 +43,7 @@ public class ResourcePodSlot extends PodSlot implements Serializable{
 	public void setTopologyId(String topologyId) {
 		this.topologyId = topologyId;
 	}
-	public Set<Integer> getContainerIds() {
-		return containerIds;
-	}
-	public void setContainerIds(Set<Integer> containerIds) {
-		this.containerIds = containerIds;
-	}
+
 	public String getHostname() {
 		return hostname;
 	}
@@ -58,12 +62,7 @@ public class ResourcePodSlot extends PodSlot implements Serializable{
 	public void setCpu(int cpu) {
 		this.cpu = cpu;
 	}
-	public String getJvm() {
-		return jvm;
-	}
-	public void setJvm(String jvm) {
-		this.jvm = jvm;
-	}
+
 	public AssignmentState getState() {
 		return state;
 	}
@@ -72,10 +71,8 @@ public class ResourcePodSlot extends PodSlot implements Serializable{
 	}
 	@Override
 	public String toString() {
-		return "ResourcePodSlot [hostname=" + hostname + ", memSize=" + memSize + ", cpu=" + cpu + ", jvm=" + jvm
-				+ ", containerIds=" + containerIds + ", state=" + state + ", topologyId=" + topologyId + ", timestamp="
-				+ timestamp + "]";
+		return "ResourcePodSlot [hostname=" + hostname + ", memSize=" + memSize + ", cpu=" + cpu + ", state=" + state
+				+ ", topologyId=" + topologyId + ", podType=" + podType + ", timestamp=" + timestamp + "]";
 	}
-    
-    
+	
 }

@@ -51,8 +51,8 @@ public class ServiceHandler implements Iface {
 		TopologyAssignEvent assignEvent = new TopologyAssignEvent();
 		String topologyId = analyzer.getTopologyId();
         assignEvent.setTopologyId(topologyId);
-        assignEvent.setTopologyName(analyzer.getTopologyName());
-        assignEvent.setYamlMap(analyzer.getYamlMap());
+        assignEvent.setTopologyName(analyzer.getApiServerYaml().getMetadata().getName());
+        assignEvent.setApiServerYaml(analyzer.getApiServerYaml());
         assignEvent.setAssignType(AssignType.assign);
 
         TopologyAssignRunnable.push(assignEvent);
@@ -114,20 +114,20 @@ public class ServiceHandler implements Iface {
 			throw new BusinessException("rolling update topology Name cannot be the same !");
 		}
 		
-		Integer newRcNum = (Integer)newAnalyzer.getYamlValue(ApiServerConstant.SPEC_REPLICAS);
-		Integer oldRcNum = (Integer)ApiServerYamlAnalyzer.getYamlValue(ApiServerConstant.SPEC_REPLICAS, assignment.getYamlMap());
+		Integer newRcNum = newAnalyzer.getApiServerYaml().getSpec().getReplicas();
+		Integer oldRcNum = assignment.getApiServerYaml().getSpec().getReplicas();
 		Integer newRcDeployedNum = 1;
 		Integer oldRcUndeployNum = 1;
 		for(int i = 1; i <= (newRcNum > oldRcNum?newRcNum:oldRcNum);i++){
 			
 			// undeploy old topology
 			if(oldRcUndeployNum <= oldRcNum){
-				ApiServerYamlAnalyzer.setYamlValue(ApiServerConstant.SPEC_REPLICAS, oldRcNum - oldRcUndeployNum,assignment.getYamlMap());
+				assignment.getApiServerYaml().getSpec().setReplicas(oldRcNum - oldRcUndeployNum);
 				TopologyAssignEvent assignEvent = new TopologyAssignEvent();
 				String topologyId = assignment.getTopologyId();
 		        assignEvent.setTopologyId(topologyId);
 		        assignEvent.setTopologyName(assignment.getTopologyName());
-		        assignEvent.setYamlMap(assignment.getYamlMap());
+		        assignEvent.setApiServerYaml(assignment.getApiServerYaml());
 		        assignEvent.setAssignType(AssignType.anewAssign);
 
 		        TopologyAssignRunnable.push(assignEvent);
@@ -164,12 +164,12 @@ public class ServiceHandler implements Iface {
 			
 			// deploy new topology
 			if(newRcDeployedNum <= newRcNum){
-				newAnalyzer.setYamlValue(ApiServerConstant.SPEC_REPLICAS, newRcDeployedNum);
+				newAnalyzer.getApiServerYaml().getSpec().setReplicas(newRcDeployedNum);
 				TopologyAssignEvent assignEvent = new TopologyAssignEvent();
 				String topologyId = newAnalyzer.getTopologyId();
 		        assignEvent.setTopologyId(topologyId);
 		        assignEvent.setTopologyName(newAnalyzer.getTopologyName());
-		        assignEvent.setYamlMap(newAnalyzer.getYamlMap());
+		        assignEvent.setApiServerYaml(newAnalyzer.getApiServerYaml());
 		        
 		        //if first deploy new topology
 		        if(i != 1){
@@ -247,7 +247,7 @@ public class ServiceHandler implements Iface {
 		TopologyAssignEvent assignEvent = new TopologyAssignEvent();
         assignEvent.setTopologyId(assignment.getTopologyId());
         assignEvent.setTopologyName(analyzer.getTopologyName());
-        assignEvent.setYamlMap(analyzer.getYamlMap());
+        assignEvent.setApiServerYaml(analyzer.getApiServerYaml());
         assignEvent.setAssignType(AssignType.anewAssign);
 
         TopologyAssignRunnable.push(assignEvent);

@@ -65,7 +65,7 @@ public class KubeletHeartbeatRunnable implements Runnable{
 		        
 		        Integer interval = KubernetesConfig.getPodHeartbeatIntervalMs();
 				Thread.sleep(interval);
-			}catch(Exception e){
+			}catch(Throwable e){
 				logger.error("",e);
 			}
 		}

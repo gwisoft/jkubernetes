@@ -52,7 +52,7 @@ public class KubectlDelete {
 	}
 
 	public static void setTestParam(String[] args){
-		System.setProperty(KUBERNETES_CREATE_YAML, "C:\\Users\\Lincm\\git\\jkubernetes\\jkubernetes-all\\jkubernetes-core\\src\\test\\java\\org\\jkubernetes\\core\\kubectl\\test.yaml");
+		System.setProperty(KUBERNETES_CREATE_YAML, "C:\\Users\\Lincm\\git\\jkubernetes\\jkubernetes-all\\jkubernetes-core\\src\\test\\java\\org\\jkubernetes\\core\\kubectl\\docker_test_app.yaml");
 		System.setProperty(KUBERNETES_APISERVER_ADDRESS, "");
 	}
 }

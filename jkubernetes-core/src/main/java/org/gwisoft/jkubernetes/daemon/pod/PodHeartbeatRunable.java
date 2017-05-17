@@ -24,21 +24,23 @@ public class PodHeartbeatRunable implements Runnable {
 	@Override
 	public void run() {
 		logger.info("*********starting PodHeartbeatRunable*************");
-		try{
-			while(!shutdown.get()){
+		
+		while(!shutdown.get()){
+			try{
 				logger.debug("*******pod heartbeat alert*********");
 				int timeSecs = DateUtils.getCurrentTimeSecs();
 				PodHeartbeat podHeartbeat = new PodHeartbeat(
-						timeSecs, podData.getTopologyId(), podData.getContainerIds(), 
-						podData.getPodId(),podData.getKubeletId());
+						timeSecs, podData.getTopologyId(), 
+						podData.getPodId(),podData.getKubeletId(),ResourcePodSlot.PodType.java_thread);
 				PodLocalState.setPodHeartbeat(podHeartbeat);
 				
 				Integer interval = KubernetesConfig.getPodHeartbeatIntervalMs();
 				Thread.sleep(interval);
+			}catch(Throwable e){
+				logger.error("",e);
 			}
-		}catch(Exception e){
-			logger.error("",e);
 		}
+		
 	}
 
 }

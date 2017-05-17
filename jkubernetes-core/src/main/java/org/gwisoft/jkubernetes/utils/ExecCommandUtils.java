@@ -15,6 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ExecCommandUtils {
+	
+	public interface ExecCommandASynCallBack{
+		public abstract void callBackPid(Integer pid);
+	}
 
 	private static final Logger logger = LoggerFactory.getLogger(ExecCommandUtils.class);
 	/**
@@ -25,6 +29,47 @@ public class ExecCommandUtils {
 	 */
 	public static void execCommand(String command) throws IOException {
 		launchProcess(command, new HashMap<String, String>(), false);
+	}
+	
+	public static boolean isExistPidRunning(String pid){
+		try {
+			List<String> commands = new ArrayList<>();
+			commands.add("ps -ef");
+			Process process = launchProcess(commands, new HashMap<String, String>());
+
+			BufferedReader in = null;
+	        String line;
+	        try {
+	        	in = new BufferedReader(new InputStreamReader(process.getInputStream(),isWindows()?"GB2312":"UTF-8"));
+	        	
+	            while ((line = in.readLine()) != null) {
+	            	logger.debug("isExistPidRunning-----" + line);
+	                if(line != null && line.contains("a")){
+	                	logger.info("Process has started (pid=" + pid + ")");
+	                	return true;
+	                }
+	            }
+	            
+	            logger.info("Process has not started (pid=" + pid + ")");
+	            return false;
+	        } catch (IOException e) {
+	            logger.error("",e);
+	            throw new RuntimeException(e);
+	        } finally {
+	            try {
+	            	if(in != null){
+	            		in.close();
+	            	}
+	            } catch (IOException e) {
+	                logger.warn("",e);
+	            }
+	        }
+			
+		} catch (Throwable e) {
+			logger.error("", e);
+			throw new RuntimeException(e);
+		}
+		
 	}
 
 
@@ -54,6 +99,20 @@ public class ExecCommandUtils {
         }
 
         return launchProcess(command, cmdList, environment, backend);
+    }
+	
+	public static String launchProcess(final String command, final Map<String, String> environment, 
+			ExecCommandUtils.ExecCommandASynCallBack callBack) throws IOException {
+        String[] cmds = command.split(" ");
+
+        ArrayList<String> cmdList = new ArrayList<String>();
+        for (String tok : cmds) {
+            if (!StringUtils.isBlank(tok)) {
+                cmdList.add(tok);
+            }
+        }
+
+        return launchProcess(command, cmdList, environment, callBack);
     }
 
 	public static String launchProcess(final String command, final List<String> cmdlist,
@@ -105,7 +164,60 @@ public class ExecCommandUtils {
 			return "";
 		}
 	}
+	
+	public static String launchProcess(final String command, final List<String> cmdlist,
+			final Map<String, String> environment, 
+			ExecCommandUtils.ExecCommandASynCallBack callBack) throws IOException {
+		if (callBack != null) {
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					List<String> cmdWrapper = new ArrayList<String>();
+					
+					
+					if(isWindows()){
+						cmdWrapper.addAll(cmdlist);
+					}else{
+						cmdWrapper.add("nohup");
+						cmdWrapper.addAll(cmdlist);
+						cmdWrapper.add("&");
+					}
+					
 
+					try {
+						Process process = launchProcess(cmdWrapper, environment);
+						Integer pid = ProcessPidUtils.getPidByProcess(process);
+						callBack.callBackPid(pid);
+					} catch (Throwable e) {
+						logger.error("Failed to run nohup " + command + " &," + e.getCause(), e);
+					}
+				}
+			}).start();
+			return null;
+		} else {
+			try {
+				Process process = launchProcess(cmdlist, environment);
+
+				StringBuilder sb = new StringBuilder();
+				String output = outputToString(process.getInputStream());
+				String errorOutput = outputToString(process.getErrorStream());
+				sb.append(output);
+				sb.append("\n");
+				sb.append(errorOutput);
+
+				int ret = process.waitFor();
+				if (ret != 0) {
+					logger.warn(command + " is terminated abnormally. ret={}, str={}", ret, sb.toString());
+					throw new RuntimeException(sb.toString());
+				}
+				return sb.toString();
+			} catch (Throwable e) {
+				logger.error("Failed to run " + command + ", " + e.getCause(), e);
+				throw new RuntimeException(e);
+			}
+		}
+	}
+	
 	protected static java.lang.Process launchProcess(final List<String> cmdlist, final Map<String, String> environment)
 			throws IOException {
 		ProcessBuilder builder = new ProcessBuilder(cmdlist);

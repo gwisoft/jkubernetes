@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.gwisoft.jkubernetes.apiserver.yaml.ApiServerYaml;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 
 
@@ -18,7 +19,7 @@ public class Assignment implements Serializable {
 	
 	private String topologyName;
 
-	private Map<String,Object> yamlMap;
+	private ApiServerYaml apiServerYaml;
 	
 	//assignment timestamp
 	private long timestamp;
@@ -31,10 +32,10 @@ public class Assignment implements Serializable {
 		this.topologyName = topologyName;
 	}
 
-	public Assignment(String topologyId,String topolgyName,Set<ResourcePodSlot> pods,Map yamlMap,long timestamp){
+	public Assignment(String topologyId,String topolgyName,Set<ResourcePodSlot> pods,ApiServerYaml apiServerYaml,long timestamp){
 		this.topologyId = topologyId;
 		this.pods = pods;
-		this.yamlMap = yamlMap;
+		this.apiServerYaml = apiServerYaml;
 		this.timestamp = timestamp;
 		this.topologyName = topolgyName;
 	}
@@ -64,26 +65,19 @@ public class Assignment implements Serializable {
 	public Assignment(){
 		this.pods = new HashSet<ResourcePodSlot>();
 	}
-	
-	public Set<Integer> getCurrentPodContainerIds(String kubeletId, int podId){
-		for(ResourcePodSlot slot:pods){
-			if(slot.getKubeletId().equals(kubeletId) && slot.getPodId() == podId){
-				return slot.getContainerIds();
-			}
-		}
-		return new HashSet<Integer>();
-	}
 
 	public Set<ResourcePodSlot> getPods() {
 		return pods;
 	}
 
-	public Map<String,Object> getYamlMap() {
-		return yamlMap;
+
+
+	public ApiServerYaml getApiServerYaml() {
+		return apiServerYaml;
 	}
 
-	public void setYamlMap(Map<String,Object> yamlMap) {
-		this.yamlMap = yamlMap;
+	public void setApiServerYaml(ApiServerYaml apiServerYaml) {
+		this.apiServerYaml = apiServerYaml;
 	}
 
 	public boolean isUpdateChange(long oldTimestamp){
