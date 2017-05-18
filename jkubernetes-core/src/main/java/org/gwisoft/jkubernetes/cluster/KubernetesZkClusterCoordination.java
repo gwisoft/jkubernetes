@@ -143,7 +143,7 @@ public class KubernetesZkClusterCoordination implements KubernetesClusterCoordin
 	public boolean registerCurrentKubeToSlave() {
 		try{
 			if(!zkClusterCoordination.isNodeExisted(KubernetesCluster.KUBE_SLAVE_SUBTREE, false)){
-				zkClusterCoordination.mkdirs(PathUtils.getParentPath(KubernetesCluster.KUBE_SLAVE_SUBTREE), CreateMode.PERSISTENT);
+				zkClusterCoordination.mkdirs(KubernetesCluster.KUBE_SLAVE_SUBTREE, CreateMode.PERSISTENT);
 			}
 			zkClusterCoordination.createNode(
 					KubernetesCluster.KUBE_SLAVE_SUBTREE + 
@@ -156,7 +156,7 @@ public class KubernetesZkClusterCoordination implements KubernetesClusterCoordin
 					KubernetesCluster.ZK_SEPERATOR + 
 					hostPort , false);
 			Map map = null;
-			if(slaveDetails == null){
+			if(slaveDetails != null){
 				map = (Map)SerializeUtils.javaDeserialize(slaveDetails);
 			}else{
 				map = new HashMap<Object,Object>();

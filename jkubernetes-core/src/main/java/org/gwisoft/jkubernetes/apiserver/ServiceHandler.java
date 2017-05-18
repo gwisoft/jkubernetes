@@ -17,6 +17,7 @@ import org.gwisoft.jkubernetes.daemon.kube.TopologyAssignRunnable;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.exception.FailedAssignTopologyException;
 import org.gwisoft.jkubernetes.schedule.Assignment;
+import org.gwisoft.jkubernetes.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,8 +222,7 @@ public class ServiceHandler implements Iface {
 			throw new BusinessException("topology name " + topologyName + "is not exist!");
 		}
 		
-		Gson gson = new GsonBuilder().create();
-		String json = gson.toJson(assignment,Assignment.class);
+		String json = JsonUtils.toJson(assignment);
 		logger.info("query topology info success! (topology name=" + topologyName + ")");
 		return json;
 	}
@@ -272,8 +272,7 @@ public class ServiceHandler implements Iface {
 		}
 
 		
-		Gson gson = new GsonBuilder().create();
-		String json = gson.toJson(assignments);
+		String json = JsonUtils.toJson(assignments);
 		logger.info("query all topology info success!");
 		return json;
 		

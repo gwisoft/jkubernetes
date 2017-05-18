@@ -56,7 +56,7 @@ public class KubernetesConfigLoad {
 		String confFile = System.getProperty("kubernetes.conf.file");
 		Map kubernetes;
 		if(StringUtils.isBlank(confFile) == true){
-			kubernetes = YamlUtils.readYaml("kubernetes.yaml",false,false);
+			kubernetes = YamlUtils.readYaml("jkubernetes.yaml",false,false);
 		}else{
 			kubernetes = YamlUtils.readYaml(confFile,true,false);
 		}

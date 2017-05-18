@@ -1,5 +1,8 @@
 package org.gwisoft.jkubernetes.utils;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 public class JsonUtils {
 
 	public static String formatJson(String jsonStr) {
@@ -61,5 +64,17 @@ public class JsonUtils {
 		for (int i = 0; i < indent; i++) {
 			sb.append('\t');
 		}
+	}
+	
+	public static String toJson(Object object){
+		Gson gson = new GsonBuilder().create();
+		String json = gson.toJson(object);
+		return json;
+	}
+	
+	public static <T> T jsonToObject(String json,Class<T> type){
+		Gson gson = new GsonBuilder().create();
+		T object = gson.fromJson(json, type);
+		return object;
 	}
 }

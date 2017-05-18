@@ -147,23 +147,16 @@ public class KubeletAssignRunnable implements Runnable {
 	
 	
 	public void updateStartingPodId(Map<Integer, StatePodHeartbeat> statePodHbMap){
-		Map<Integer, PodHeartbeat> podHbMappodHbMap = KubeletLocalState.getValidPodHeartbeats(statePodHbMap);
 		Set<Integer> podIds = new HashSet<>();
 		for(Entry<Integer,Integer> entry:podIdToStartTime.entrySet()){
 			Integer podId = entry.getKey();
 			Integer startTime = entry.getValue();
-			
-			PodHeartbeat podhb = podHbMappodHbMap.get(podId);
-			if(podhb == null){
-				if((DateUtils.getCurrentTimeSecs() - startTime) < 
-					(int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_POD_START_TIMEOUT_SECS)){
-					logger.info(podId + " still hasn't started");
-				}else{
-					logger.error("***************Failed to start Pod " + podId + "********************");
-					podIds.add(podId);
-				}
+
+			if((DateUtils.getCurrentTimeSecs() - startTime) < 
+				(int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_POD_START_TIMEOUT_SECS)){
+				logger.info(podId + " still hasn't started");
 			}else{
-				logger.info("*************Successfully start Pod " + podId + "*****************");
+				logger.error("***************Failed to start Pod " + podId + "********************");
 				podIds.add(podId);
 			}
 		}
@@ -334,7 +327,9 @@ public class KubeletAssignRunnable implements Runnable {
 					&& shb.getPodHb().getTopologyId().equals(slot.getTopologyId())){
 				keepPodIds.add(hbEntry.getKey());
 			}else{
-				killPodIds.add(hbEntry.getValue());
+				if(!podIdToStartTime.containsKey(hbEntry.getKey())){
+					killPodIds.add(hbEntry.getValue());
+				}
 			}
 
 		}

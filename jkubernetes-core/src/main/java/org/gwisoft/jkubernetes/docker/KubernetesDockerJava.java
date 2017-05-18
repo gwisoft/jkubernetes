@@ -17,6 +17,7 @@ import org.gwisoft.jkubernetes.daemon.pod.PodLocalState;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.utils.DateUtils;
+import org.gwisoft.jkubernetes.utils.JsonUtils;
 import org.gwisoft.jkubernetes.utils.KubernetesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,8 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.DockerCmdExecFactory;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
@@ -70,7 +73,7 @@ public class KubernetesDockerJava implements KubernetesDocker {
 	
 	@Override
 	public boolean startContainer(ResourcePodSlotDocker slot) {
-		logger.info("start running container...");
+		logger.info("start_running_container...");
 		TemplateSpec templateSpec = slot.getTemplateSpec();
 		List<PodVolume> podVolumes = templateSpec.getVolumes();
 		Volume[] volumes;
@@ -109,16 +112,26 @@ public class KubernetesDockerJava implements KubernetesDocker {
 	        }
 			
 			//2、cleanup old container
+			String containerName = subContainer.getName() + "_" +slot.getPodId();
 			try{
 				List<Container> dockerContainers = dockerClient.listContainersCmd().withShowAll(true).exec();
+				logger.info("find_container_number " + dockerContainers.size() + " currentContainerName=" + containerName);
 				for(Container dockerContainer:dockerContainers){
-					if(dockerContainer.getNames()[0].equals(subContainer.getName())){
-						dockerClient.stopContainerCmd(dockerContainer.getId());
+					logger.info("container_name=" + dockerContainer.getNames()[0]);
+					if(dockerContainer.getNames()[0].contains(containerName)){
+						try{
+							dockerClient.stopContainerCmd(dockerContainer.getId()).exec();
+							logger.info("stop container id:" + dockerContainer.getId() + " container name:" + containerName);
+						}catch(Exception e){
+							logger.warn("stop container id:" + dockerContainer.getId() + " container name:" + containerName + " fail!",e);
+						}
 						
-						logger.info("stop container id:" + dockerContainer.getId() + " container name:" + subContainer.getName());
-						
-						dockerClient.removeContainerCmd(dockerContainer.getId());
-						logger.info("remove container id:" + dockerContainer.getId() + " container name:" + subContainer.getName());
+						try{
+							dockerClient.removeContainerCmd(dockerContainer.getId()).exec();
+							logger.info("remove container id:" + dockerContainer.getId() + " container name:" + containerName);
+						}catch(Exception e){
+							logger.warn("remove container id:" + dockerContainer.getId() + " container name:" + containerName + " fail",e);
+						}
 						
 						break;
 					}
@@ -128,14 +141,16 @@ public class KubernetesDockerJava implements KubernetesDocker {
 			}
 			
 			
-			CreateContainerCmd  cmd = dockerClient.createContainerCmd(subContainer.getImage()).withCmd("true");
+			CreateContainerCmd  cmd = dockerClient.createContainerCmd(subContainer.getImage()).withCmd("/bin/bash").withTty(true);
 			//3、bind port
 			if(subContainer.getContainerPorts() != null && !subContainer.getContainerPorts().isEmpty()){
 				ExposedPort[] exposedPorts = new  ExposedPort[subContainer.getContainerPorts().size()];
 				Ports portBindings = new Ports();
+				int i = 0;
 				for(ContainerPort port:subContainer.getContainerPorts()){
 					ExposedPort exposedPort = new ExposedPort(port.getContainerPort());
 					portBindings.bind(exposedPort, Binding.bindPort(Integer.valueOf(port.getHostPort()  + "" +  slot.getPodId())));
+					exposedPorts[i] = exposedPort;
 				}
 				
 				cmd.withExposedPorts(exposedPorts).withPortBindings(portBindings);
@@ -160,25 +175,35 @@ public class KubernetesDockerJava implements KubernetesDocker {
 			
 			
 			//5、create new container
-			CreateContainerResponse dockerContainer = cmd.withName(subContainer.getName()).exec();
+			CreateContainerResponse dockerContainer = cmd.withName(containerName).exec();
 			
 			
-			//4、start container
+			//6、start container
 			dockerClient.startContainerCmd(dockerContainer.getId()).exec();
-			dockerClient.waitContainerCmd(dockerContainer.getId()).exec(new WaitContainerResultCallback()).awaitStatusCode();
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			
-			//save container
+			//7、query state
+//			InspectContainerResponse inspectContainerResponse = dockerClient.inspectContainerCmd(dockerContainer.getId()).exec();
+//			ContainerState state = inspectContainerResponse.getState();
+//			String stateJson = JsonUtils.toJson(state);
+//			logger.debug("start container running state = " + stateJson);
+			
+			//7、save container id
 			String pidsDir = KubernetesConfig.getLocalPodPidsDir(slot.getPodId());
 			KubernetesUtils.savePid(pidsDir, dockerContainer.getId());
 			
-			//save initial heartbeat
+			//8、save initial heartbeat
 			int timeSecs = DateUtils.getCurrentTimeSecs();
 			PodHeartbeat podHeartbeat = new PodHeartbeat(
 					timeSecs, slot.getTopologyId(), 
 					slot.getPodId(),slot.getKubeletId(),ResourcePodSlot.PodType.docker);
 			PodLocalState.setPodHeartbeat(podHeartbeat);
 			
-			logger.info("run success container name:" + subContainer.getName() + 
+			logger.info("run success container name:" + containerName + 
 					" image:" + subContainer.getImage() + " container id:" + dockerContainer.getId());
 		}
 		
@@ -199,7 +224,7 @@ public class KubernetesDockerJava implements KubernetesDocker {
 				List<Container> dockerContainers = dockerClient.listContainersCmd().withShowAll(true).exec();
 				for(Container dockerContainer:dockerContainers){
 					if(dockerContainer.getNames()[0].equals(podContainer.getName())){
-						dockerClient.stopContainerCmd(dockerContainer.getId());
+						dockerClient.stopContainerCmd(dockerContainer.getId()).exec();
 						logger.info("stop container id:" + dockerContainer.getId());
 						break;
 					}
@@ -215,6 +240,7 @@ public class KubernetesDockerJava implements KubernetesDocker {
 	@Override
 	public boolean isRunningContainer(String containerId) {
         try {
+        	logger.debug("start_monitor_containerId(" + containerId  + ")_is_running!");
         	CountDownLatch countDownLatch = new CountDownLatch(5);
     		
     		StatsCallbackTest statsCallback = dockerClient.statsCmd(containerId).exec(
@@ -223,6 +249,7 @@ public class KubernetesDockerJava implements KubernetesDocker {
 			countDownLatch.await(3, TimeUnit.SECONDS);
 			
 			Boolean gotStats = statsCallback.gotStats();
+			logger.debug("monitor return " + gotStats);
 			return gotStats;
 		} catch (InterruptedException e) {
 			logger.error("",e);

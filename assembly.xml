@@ -13,6 +13,16 @@
             <fileMode>0755</fileMode>
             <destName>kubectl</destName>
         </file>
+        <file>
+            <source>${project.basedir}\jkubernetes-core\src\main\resources\defaults.yaml</source>
+            <outputDirectory>/conf</outputDirectory>
+            <destName>jkubernetes.yaml</destName>
+        </file>
+        <file>
+            <source>conf/logback.xml</source>
+            <outputDirectory>/conf</outputDirectory>
+            <destName>logback.xml</destName>
+        </file>
     </files>    
     <fileSets>
         <fileSet>
