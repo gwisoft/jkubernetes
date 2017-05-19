@@ -23,5 +23,17 @@ kubelet run: nohup kubectl kubelet &
 
 deployment app
 ```
-kubelet create ***.yaml
+kubelet create -f ***.yaml
+```
+```
+kubectl delete -f ***.yaml
+```
+```
+kubectl rolling-update [old topology name] -f ***.yaml
+```
+```
+kubelet get po [topology name]
+```
+```
+kubelet replace -f ***.yaml
 ```
