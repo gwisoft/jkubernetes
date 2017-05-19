@@ -1,8 +1,13 @@
 # jkubernetes
 
-1. Build jkubernetes
+1. Build with Maven
 ```
-git clone https://github.com/gwisoft/jkubernetes.git
+Prerequisites:
+* Java min 1.8
+* Maven 3
+```
+```
+Build and run integration tests as follows:
 mvn clean package install
 ```
 
@@ -13,10 +18,15 @@ mvn package assembly:assembly
 
 3. install jkubernetes
 ```
+Install the zookeeper:
+* Install...Refer to the official
+```
+```
 tar -zxvf jkubernetes-all-*.*.*-SNAPSHOT-distribution.tar.gz
+cd jkubernetes-all-*.*.*-SNAPSHOT
+vi conf/jkubernetes.yaml ....edit zookeeper server ip and port
 
-cd jkubernetes-all-*.*.*-SNAPSHOT/bin
-
+cd bin
 kube run: nohup kubectl kube &
 kubelet run: nohup kubectl kubelet &
 ```
