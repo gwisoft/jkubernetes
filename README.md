@@ -47,3 +47,33 @@ kubelet get po [topology name]
 ```
 kubelet replace -f ***.yaml
 ```
+
+
+5、yaml file template
+```
+* command.yaml
+apiVersion: v1
+kind: ReplicationController
+metadata:
+ name: command_test_app
+spec:
+ replicas: 2
+ template:
+  spec:
+   command: /usr/downloads/command_test_app/run.sh
+```
+
+```
+* docker.yaml
+apiVersion: v1
+kind: ReplicationController
+metadata:
+ name: docker_test_app
+spec:
+ replicas: 2
+ template:
+  spec:
+   containers:
+    - name: docker_test_app
+      image: gwisoft/centos:jdk
+``` 
