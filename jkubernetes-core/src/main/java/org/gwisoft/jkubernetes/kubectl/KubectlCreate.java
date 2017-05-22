@@ -18,7 +18,7 @@ public class KubectlCreate {
 	private static final Logger logger = LoggerFactory.getLogger(KubectlCreate.class);
 
 	public static void main(String[] args){
-		setTestParam(args);
+		//setTestParam(args);
 		start(args);
 	}
 	

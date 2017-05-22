@@ -5,13 +5,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.server.TNonblockingServer;
+import org.apache.thrift.server.THsHaServer;
 import org.apache.thrift.server.TServer;
+import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TTransportException;
 import org.gwisoft.jkubernetes.apiserver.ServiceHandler;
 import org.gwisoft.jkubernetes.apiserver.thrift.ApiServer;
 import org.gwisoft.jkubernetes.apiserver.thrift.ApiServer.Iface;
+import org.gwisoft.jkubernetes.cluster.KubernetesCluster;
+import org.gwisoft.jkubernetes.cluster.KubernetesClusterCoordination;
 import org.gwisoft.jkubernetes.config.KubernetesConfig;
 import org.gwisoft.jkubernetes.config.KubernetesConfigConstant;
 import org.gwisoft.jkubernetes.config.KubernetesConfigLoad;
@@ -85,6 +88,8 @@ public class KubeServer {
 		//create pid file(A server can only start on)
 		KubeUtils.createPid();
 		
+		initKubeletHB();
+		
 		//set shutdown hook 
 		initShutdownHook();
 		
@@ -117,6 +122,11 @@ public class KubeServer {
 		initThrift();
 	}
 	
+	public void initKubeletHB(){
+		KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
+		coordination.clearKubeletHeartbeats();
+	}
+	
 	public void initThrift(){
 		Integer thriftPort = (Integer)KubernetesConfigLoad.getKubernetesConfig()
 				.get(KubernetesConfigConstant.KUBERNETES_APISERVER_PORT);
@@ -125,17 +135,16 @@ public class KubeServer {
 			Integer maxReadBufSize = (Integer)KubernetesConfigLoad.getKubernetesConfig()
 					.get(KubernetesConfigConstant.KUBERNETES_APISERVER_MAXBUFFERSIZE);
 			
-			TNonblockingServer.Args args = new TNonblockingServer.Args(nbServerSocket);
+			THsHaServer.Args args = new THsHaServer.Args(nbServerSocket);
 			
-			//args.minWorkerThreads(ServiceHandler.MIN_THREAD_NUM);
-			//args.maxWorkerThreads(ServiceHandler.MAX_THREAD_NUM);
 	        args.protocolFactory(new TBinaryProtocol.Factory(false, true, maxReadBufSize, -1));
 
 	        ServiceHandler serviceHandler = new ServiceHandler(kubeData);
 	        args.processor(new ApiServer.Processor<Iface>(serviceHandler));
+	        args.transportFactory(new TFramedTransport.Factory());
 	        args.maxReadBufferBytes = maxReadBufSize;
 
-	        thriftServer = new TNonblockingServer(args);
+	        thriftServer = new THsHaServer(args);
 
 	        logger.info("*****************Successfully started kube: started Thrift server...*******************");
 	        thriftServer.serve();
@@ -145,7 +154,7 @@ public class KubeServer {
 	}
 	
 	public void initTopologyMonitor(){
-		ScheduledExecutorService execSer = Executors.newScheduledThreadPool(8);
+		ScheduledExecutorService execSer = Executors.newScheduledThreadPool(1);
 		TopologyMonitorRunnable monitorRun = new TopologyMonitorRunnable();
 		
 		Integer period = (Integer)KubernetesConfigLoad.getKubernetesConfig().get(

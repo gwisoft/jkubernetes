@@ -18,7 +18,7 @@ public class KubectlReplace {
 	private static final Logger logger = LoggerFactory.getLogger(KubectlReplace.class);
 
 	public static void main(String[] args){
-		setTestParam(args);
+		//setTestParam(args);
 		start(args);
 	}
 	

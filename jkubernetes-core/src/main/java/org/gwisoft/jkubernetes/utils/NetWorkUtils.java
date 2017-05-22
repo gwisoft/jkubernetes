@@ -3,6 +3,7 @@ package org.gwisoft.jkubernetes.utils;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,9 @@ public class NetWorkUtils {
 			sub = httpPath.substring(9);
 		}else{
 			sub = httpPath;
+		}
+		if(!sub.contains(":")){
+			throw new BusinessException("api server address format(for example: 127.0.0.1:8001)");
 		}
 		String ip = sub.substring(0,httpPath.indexOf(":"));
 		String port = sub.substring(httpPath.indexOf(":") + 1);

@@ -152,6 +152,12 @@ public class KubernetesUtils {
 			throw new RuntimeException("pids dir: " + pidsDir + " isn't directory");
 		}
 		
+		String[] existPids = file.list();
+			for(String existPid:existPids){
+				KubernetesUtils.kill(existPid);
+				PathUtils.rmPath(pidsDir + File.separator + existPid);
+			}
+		
 		String pid = KubernetesUtils.getProcessPid();
 		
 		String pidPath = pidsDir + File.separator + pid;

@@ -18,7 +18,7 @@ public class KubectlGet {
 	private static final Logger logger = LoggerFactory.getLogger(KubectlGet.class);
 
 	public static void main(String[] args){
-		args = setTestParam(args);
+		//args = setTestParam(args);
 		start(args);
 	}
 	
@@ -62,9 +62,9 @@ public class KubectlGet {
 	public static String[] setTestParam(String[] args){
 		System.setProperty(KUBERNETES_APISERVER_ADDRESS, "");
 		if(args == null || args.length < 1){
-			args = new String[2];
+			args = new String[1];
 			args[0] = "po";
-			args[1] = "test_app_1";
+			//args[1] = "test_app_1";
 		}
 		return args;
 	}

@@ -18,6 +18,7 @@ import org.gwisoft.jkubernetes.daemon.kubelet.KubeletHeartbeat;
 import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.schedule.Assignment;
 import org.gwisoft.jkubernetes.utils.DateUtils;
+import org.gwisoft.jkubernetes.utils.JsonUtils;
 import org.gwisoft.jkubernetes.utils.KubernetesUtils;
 import org.gwisoft.jkubernetes.utils.PathUtils;
 import org.gwisoft.jkubernetes.utils.SerializeUtils;
@@ -311,9 +312,14 @@ public class KubernetesZkClusterCoordination implements KubernetesClusterCoordin
 				}
 				
 				KubeletHeartbeat hb = (KubeletHeartbeat)SerializeUtils.javaDeserialize(data);
+				logger.debug("kubelet_id=" + kubeletId + " heartheat_info=" + JsonUtils.toJson(hb));
 				
 				if(DateUtils.getCurrentTimeSecs() - hb.getTimeSecs() > 
-					(int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_KUBELET_POD_HEARTBEAT_TIMEOUT_SECS)){
+					(int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_KUBE_KUBELET_HEARTBEAT_TIMEOUT_SECS)){
+					logger.debug("kubelet_id=" + kubeletId 
+							+ " timeout,heartbeat timesecs=" + hb.getTimeSecs() 
+							+ " currentTimeSecs=" +  DateUtils.getCurrentTimeSecs() 
+							+ " KUBERNETES_KUBE_KUBELET_HEARTBEAT_TIMEOUT_SECS=" + (int)kubernetesConfig.get(KubernetesConfigConstant.KUBERNETES_KUBE_KUBELET_HEARTBEAT_TIMEOUT_SECS));
 					continue;
 				}
 				kubeletHeartbeats.add(hb);
@@ -353,6 +359,17 @@ public class KubernetesZkClusterCoordination implements KubernetesClusterCoordin
 		}
 		
 		return currentTopology;
+	}
+
+	@Override
+	public void clearKubeletHeartbeats() {
+		String path = KubernetesCluster.KUBELET_HEARTBEAT_SUBTREE;
+		try {
+			zkClusterCoordination.deleteNode(path);
+		} catch (Exception e) {
+			logger.warn("",e);
+		}
+		
 	}
 
 }

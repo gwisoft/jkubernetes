@@ -38,8 +38,11 @@ public class Kubelet {
 			//load Kubernetes config to memory
 		    KubernetesConfigLoad.initKubernetesConfig();
 		    
-		    //kubelet Id
-		    String kubeletId = createKubeletId();
+		    //kubelet Pid
+		    createKubeletPid();
+		    
+		    //kubelet id
+		    String kubeletId = KubeletLocalState.getLocalKubeletId();
 		    
 		    //kubelet heartbeat
 		    KubeletHeartbeatRunnable kubeletHBRunnable = new KubeletHeartbeatRunnable(kubeletId);
@@ -60,16 +63,14 @@ public class Kubelet {
 		
 	}
 	
-	public static String createKubeletId(){
+	public static void createKubeletPid(){
 		String pidsDir;
 		try {
 			//kubelet uniqueness
 			pidsDir = KubernetesConfig.getKubeletPidDir();
 			String pid = KubernetesUtils.createPid(pidsDir);
-			
-			//
+
 			logger.debug("successful create pid");
-			return UUID.randomUUID().toString();
 		} catch (IOException e) {
 			logger.error("failed to create pid",e);
 			throw new RuntimeException(e);

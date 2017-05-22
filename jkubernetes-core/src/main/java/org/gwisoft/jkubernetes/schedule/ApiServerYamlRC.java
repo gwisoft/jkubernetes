@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.gwisoft.jkubernetes.apiserver.ApiServerConstant;
-import org.gwisoft.jkubernetes.apiserver.ApiServerYamlAnalyzer;
 import org.gwisoft.jkubernetes.apiserver.yaml.PodContainer;
 import org.gwisoft.jkubernetes.cluster.KubernetesCluster;
 import org.gwisoft.jkubernetes.cluster.KubernetesClusterCoordination;
@@ -18,11 +16,15 @@ import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 import org.gwisoft.jkubernetes.docker.ResourcePodSlotCommand;
 import org.gwisoft.jkubernetes.docker.ResourcePodSlotDocker;
 import org.gwisoft.jkubernetes.exception.BusinessException;
+import org.gwisoft.jkubernetes.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ApiServerYamlRC extends AbstractApiServerYaml {
 
 	private TopologyAssignContext context;
 	private static KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
+	private static final Logger logger = LoggerFactory.getLogger(ApiServerYamlRC.class);
 	
 	public ApiServerYamlRC(TopologyAssignContext context){
 		this.context = context;
@@ -52,6 +54,8 @@ public class ApiServerYamlRC extends AbstractApiServerYaml {
 			}
 		}
 		
+		logger.info("assignment_topology_name=" + context.getApiServerYaml().getMetadata().getName()
+				+ " vaild_resource:" + JsonUtils.toJson(hbMap));
 		
 		Set<ResourcePodSlot> assigned = new HashSet<ResourcePodSlot>();
 		KubeletHeartbeat maxWeight;

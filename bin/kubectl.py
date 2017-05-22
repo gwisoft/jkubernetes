@@ -195,8 +195,10 @@ def delete(args):
     kubectl delete -f ***.yaml
     """
     pass
+
+    args = parse_client_createopts(args)
     
-    childopts = get_client_customopts() + get_exclude_jars()
+    childopts = get_client_customopts() + get_exclude_jars() + get_client_createopts()
     print ("childopts=")
     print (childopts)
     exec_jkubernetes_class(
@@ -212,8 +214,10 @@ def rollingUpdate(args):
     kubectl rolling-update [old topology name] -f ***.yaml
     """
     pass
+
+    args = parse_client_createopts(args)
     
-    childopts = get_client_customopts() + get_exclude_jars()
+    childopts = get_client_customopts() + get_exclude_jars() + get_client_createopts()
     print ("childopts=")
     print (childopts)
     exec_jkubernetes_class(
@@ -229,8 +233,10 @@ def replace(args):
     kubectl replace -f ***.yaml
     """
     pass
+
+    args = parse_client_createopts(args)
     
-    childopts = get_client_customopts() + get_exclude_jars()
+    childopts = get_client_customopts() + get_exclude_jars() + get_client_createopts()
     print ("childopts=")
     print (childopts)
     exec_jkubernetes_class(
@@ -243,7 +249,7 @@ def replace(args):
     
 def get(args):
     """
-    kubectl get po
+    kubectl get po [topology name]
     """
     pass
     

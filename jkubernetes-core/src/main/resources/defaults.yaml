@@ -4,7 +4,7 @@ kubernetes.cluster.mode: "distributed"
 
 #kube server
 kubernetes.kube.monitor.topology.period.secs: 5
-kubernetes.kube.kubelet.heartbeat.timeout.secs: 5
+kubernetes.kube.kubelet.heartbeat.timeout.secs: 20
 
 #zookeeper config
 kubernetes.zookeeper.root: /kubernetes
@@ -35,6 +35,7 @@ kubernetes.kubelet.slots.podids:
  - 1004
 
 kubernetes.kubelet.heartbeat.interval.ms: 2000
+kubernetes.kubelet.docker.registry.url: https://index.docker.io/v1/
 
 #pod
 kubernetes.pod.heartbeat.interval.ms: 2000

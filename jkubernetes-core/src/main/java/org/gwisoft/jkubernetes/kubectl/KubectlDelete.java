@@ -18,7 +18,7 @@ public class KubectlDelete {
 	private static final Logger logger = LoggerFactory.getLogger(KubectlDelete.class);
 
 	public static void main(String[] args){
-		setTestParam(args);
+		//setTestParam(args);
 		start(args);
 	}
 	

@@ -135,6 +135,19 @@ public class KubernetesConfig {
 		return pidsDir;
 	}
 	
+	public static String getKubeletIdDir() throws IOException{
+		String idsDir = getKubeletLocalRootDir() + FILE_SEPERATEOR + "ids";
+		
+		try{
+			FileUtils.forceMkdir(new File(idsDir));
+		}catch(IOException e){
+			logger.error("Failed to create dir " + idsDir,e);
+			throw e;
+		}
+		
+		return idsDir;
+	}
+	
 	/**
 	* @Title: getMasterDistLocalPath 
 	* @Description: get master kube local dist path

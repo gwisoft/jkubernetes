@@ -14,6 +14,7 @@ import org.gwisoft.jkubernetes.daemon.kubelet.KubeletHeartbeat;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
 import org.gwisoft.jkubernetes.exception.FailedAssignTopologyException;
 import org.gwisoft.jkubernetes.schedule.Assignment;
+import org.gwisoft.jkubernetes.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,12 @@ public class TopologyMonitorRunnable implements Runnable {
 					
 					KubeletHeartbeat hb = vaildPods.get(slot.getKubeletId());
 					if(hb == null || !hb.getPodIds().contains(slot.getPodId())){
+						logger.warn("*************resource: kubelet_id=" + slot.getKubeletId() 
+							+ " pod_id=" + slot.getPodId() + " Invaild,it will need restart assignment!***********");
+						logger.warn("assigned_topology_name=" + assignment.getTopologyName() + " old_resource=" 
+								+ JsonUtils.toJson(assignment.getPods()) 
+								+ " vaild_resource:" + JsonUtils.toJson(vaildPods));
+						
 						isAnew = true;
 						break;
 					}

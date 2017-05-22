@@ -52,15 +52,14 @@ public class KubeletHeartbeatRunnable implements Runnable{
 		
 		while(!shutdown.get()){
 			try{
-				heartbeat.setTimeSecs(DateUtils.getCurrentTimeSecs());
-				heartbeat.setUptimeSecs((int) (DateUtils.getCurrentTimeSecs() - startTime));
-				
 				List<Integer> podList = calculatorAvailablePodIds();
 		        Set<Integer> podIds = KubernetesUtils.listToSet(podList);
 		        heartbeat.setPodIds(podIds);
 		        heartbeat.setUnassignedPodIds(getUnassignedPodIds(podList));
 		        heartbeat.setAvailablePodHeartbeats(KubeletLocalState.getValidPodHeartbeats());
 		        
+		        heartbeat.setTimeSecs(DateUtils.getCurrentTimeSecs());
+				heartbeat.setUptimeSecs((int) (DateUtils.getCurrentTimeSecs() - startTime));
 		        coordination.setKubeletHeartbeat(heartbeat);
 		        
 		        Integer interval = KubernetesConfig.getPodHeartbeatIntervalMs();

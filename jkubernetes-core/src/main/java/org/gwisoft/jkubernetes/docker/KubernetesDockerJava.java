@@ -12,6 +12,7 @@ import org.gwisoft.jkubernetes.apiserver.yaml.PodContainer;
 import org.gwisoft.jkubernetes.apiserver.yaml.PodVolume;
 import org.gwisoft.jkubernetes.apiserver.yaml.TemplateSpec;
 import org.gwisoft.jkubernetes.config.KubernetesConfig;
+import org.gwisoft.jkubernetes.config.KubernetesConfigConstant;
 import org.gwisoft.jkubernetes.daemon.pod.PodHeartbeat;
 import org.gwisoft.jkubernetes.daemon.pod.PodLocalState;
 import org.gwisoft.jkubernetes.daemon.pod.ResourcePodSlot;
@@ -63,7 +64,8 @@ public class KubernetesDockerJava implements KubernetesDocker {
 	
 	protected DefaultDockerClientConfig config(String password) {
         DefaultDockerClientConfig.Builder builder = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withRegistryUrl("https://index.docker.io/v1/");
+                .withRegistryUrl((String)KubernetesConfig.getKubernetesconfig().
+                		get(KubernetesConfigConstant.KUBERNETES_KUBELET_DOCKER_REGISTRY_URL));
         if (password != null) {
             builder = builder.withRegistryPassword(password);
         }
@@ -224,7 +226,7 @@ public class KubernetesDockerJava implements KubernetesDocker {
 				List<Container> dockerContainers = dockerClient.listContainersCmd().withShowAll(true).exec();
 				for(Container dockerContainer:dockerContainers){
 					if(dockerContainer.getNames()[0].equals(podContainer.getName())){
-						dockerClient.stopContainerCmd(dockerContainer.getId()).exec();
+						stopContainer(dockerContainer.getId());
 						logger.info("stop container id:" + dockerContainer.getId());
 						break;
 					}
@@ -285,10 +287,20 @@ public class KubernetesDockerJava implements KubernetesDocker {
 	@Override
 	public void stopContainer(String containerId) {
 		try{
-			dockerClient.stopContainerCmd(containerId);
-			logger.info("stop container id:" + containerId);
+			
+			Boolean isRunning = isRunningContainer(containerId);
+			if(isRunning == true){
+				dockerClient.stopContainerCmd(containerId).withTimeout(5).exec();
+				
+				isRunning = isRunningContainer(containerId);
+				if(isRunning == true){
+					throw new BusinessException("Don‘t Container id=" + containerId);
+				}
+			}
+			
+			logger.info("stop container id:" + containerId + "successful!");
 		}catch(Exception e){
-			logger.warn("stop container id:" + containerId,e);
+			throw new BusinessException("stop container id:" + containerId + " fail!",e);
 		}
 		
 		

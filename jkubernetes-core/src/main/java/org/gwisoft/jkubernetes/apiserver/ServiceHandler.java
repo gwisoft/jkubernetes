@@ -136,7 +136,7 @@ public class ServiceHandler implements Iface {
 		        boolean isSuccess = assignEvent.waitFinish();
 		        if (isSuccess == true) {
 		        	oldRcUndeployNum++;
-		            logger.info("Finish submit for " + assignEvent.getTopologyName() + "rolling undeploy rc num=" + oldRcUndeployNum);
+		            logger.info("Finish submit for " + assignEvent.getTopologyName() + " rolling undeploy rc num=" + oldRcUndeployNum);
 		        } else {
 		            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
 		        }
@@ -158,9 +158,6 @@ public class ServiceHandler implements Iface {
 					}
 				}
 				
-				if(oldRcUndeployNum == oldRcNum){
-		        	deleteTopology(assignment.getTopologyName());
-		        }
 			}
 			
 			// deploy new topology
@@ -207,9 +204,23 @@ public class ServiceHandler implements Iface {
 					}
 				}
 			}
-			
-			
 		}
+		
+		//delete old topology
+		TopologyAssignEvent assignEvent1 = new TopologyAssignEvent();
+        assignEvent1.setTopologyName(assignment.getTopologyName());
+        assignEvent1.setAssignType(AssignType.delete);
+
+        TopologyAssignRunnable.push(assignEvent1);
+
+        boolean isSuccess1 = assignEvent1.waitFinish();
+        if (isSuccess1 == true) {
+            logger.info("delete topology name= " + assignEvent1.getTopologyName());
+        } else {
+            throw new FailedAssignTopologyException(assignEvent1.getErrorMsg());
+        }
+
+		
 		logger.info("oldTopologyName=" + assignment.getTopologyName() + " and newTopologyName=" + newAnalyzer.getTopologyName() + "rolling update success!");
 		
 	}

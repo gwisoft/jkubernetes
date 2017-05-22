@@ -40,5 +40,7 @@ public interface KubernetesClusterCoordination {
 	
 	public List<KubeletHeartbeat> getValidKubeletHeartbeats();
 	
+	public void clearKubeletHeartbeats();
+	
 
 }

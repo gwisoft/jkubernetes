@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 import org.gwisoft.jkubernetes.config.KubernetesConfig;
@@ -117,19 +118,6 @@ public class KubeletLocalState {
 		return statePodHbs;
 	}
 	
-	public static String getLocalKubeletId(){
-		String pidsDir;
-		try {
-			pidsDir = KubernetesConfig.getKubeletPidDir();
-			String pid = KubernetesUtils.createPid(pidsDir);
-			logger.debug("successful create pid");
-			return pid;
-		} catch (IOException e) {
-			logger.error("failed to create pid",e);
-			throw new RuntimeException(e);
-		}
-	}
-	
 	public static Map<Integer, ResourcePodSlot> getLocalAssignments(String kubeletId) throws IOException{
 		String kubeletAssignPath = KubernetesConfig.getKubeletAssignPath(kubeletId);
 		
@@ -156,6 +144,31 @@ public class KubeletLocalState {
 		String PodPidPath = KubernetesConfig.getLocalPodPidsDir(podId);
 		List<String> pids = PathUtils.readSubFileNames(PodPidPath);
 		return pids;
+	}
+	
+	public static String getLocalKubeletId(){
+		String idsDir;
+		try {
+			idsDir = KubernetesConfig.getKubeletIdDir();
+		} catch (IOException e) {
+			throw new BusinessException(e);
+		}
+		List<String> ids = PathUtils.readSubFileNames(idsDir);
+		if(ids != null && ids.size() == 1){
+			return ids.get(0);
+		}else{
+			if(ids != null && ids.size() > 1){
+				for(String existId:ids){
+					PathUtils.rmPath(idsDir + File.separator + existId);
+				}
+				
+			}
+			
+			String kubeletId = UUID.randomUUID().toString();
+			KubernetesUtils.savePid(idsDir, kubeletId);
+			return kubeletId;
+		}
+
 	}
 	
 	public static void cleanupPidsByPodId(Integer podId){

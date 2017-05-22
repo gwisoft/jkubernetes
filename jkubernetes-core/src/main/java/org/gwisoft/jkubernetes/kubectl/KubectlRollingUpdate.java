@@ -20,7 +20,7 @@ public class KubectlRollingUpdate {
 	private static final Logger logger = LoggerFactory.getLogger(KubectlRollingUpdate.class);
 
 	public static void main(String[] args){
-		args = setTestParam(args);
+		//args = setTestParam(args);
 		start(args);
 	}
 	
@@ -59,10 +59,10 @@ public class KubectlRollingUpdate {
 	}
 
 	public static String[] setTestParam(String[] args){
-		System.setProperty(KUBERNETES_CREATE_YAML, "C:\\Users\\Lincm\\git\\jkubernetes\\jkubernetes-all\\jkubernetes-core\\src\\test\\java\\org\\jkubernetes\\core\\kubectl\\test1.yaml");
+		System.setProperty(KUBERNETES_CREATE_YAML, "C:\\Users\\Lincm\\git\\jkubernetes\\jkubernetes-all\\jkubernetes-core\\src\\test\\java\\org\\jkubernetes\\core\\kubectl\\docker_test_app_2.yaml");
 		System.setProperty(KUBERNETES_APISERVER_ADDRESS, "");
 		args = new String[1];
-		args[0] = "test_app";
+		args[0] = "docker_test_app";
 		return args;
 	}
 }

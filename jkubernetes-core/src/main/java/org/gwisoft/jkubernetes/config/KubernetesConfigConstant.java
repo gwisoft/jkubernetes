@@ -31,6 +31,7 @@ public class KubernetesConfigConstant {
 	protected static final String KUBERNETES_KUBELET_RESOURCE_RESERVE_MEM = "kubernetes.kubelet.resource.reserve.mem";
 	public static final String KUBERNETES_KUBELET_HEARTBEAT_INTERVAL_MS = "kubernetes.kubelet.heartbeat.interval.ms";
 	public static final String KUBERNETES_KUBELET_POD_HEARTBEAT_TIMEOUT_SECS = "kubernetes.kubelet.pod.heartbeat.timeout.secs";
+	public static final String KUBERNETES_KUBELET_DOCKER_REGISTRY_URL = "https://index.docker.io/v1/";
 	
 	//pod
 	public static final String KUBERNETES_POD_HEARTBEAT_INTERVAL_MS = "kubernetes.pod.heartbeat.interval.ms";

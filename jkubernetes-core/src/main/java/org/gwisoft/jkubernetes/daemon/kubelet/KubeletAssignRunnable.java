@@ -30,6 +30,7 @@ import org.gwisoft.jkubernetes.exception.BusinessException;
 import org.gwisoft.jkubernetes.schedule.Assignment;
 import org.gwisoft.jkubernetes.utils.DateUtils;
 import org.gwisoft.jkubernetes.utils.ExecCommandUtils;
+import org.gwisoft.jkubernetes.utils.JsonUtils;
 import org.gwisoft.jkubernetes.utils.KubernetesUtils;
 import org.gwisoft.jkubernetes.utils.PathUtils;
 import org.slf4j.Logger;
@@ -73,6 +74,7 @@ public class KubeletAssignRunnable implements Runnable {
 	}
 
 	private void process(){
+		logger.debug("start KubeletAssignRunnable...");
 		
 		//get all assignments
 		List<String> assignments = coordination.getAssignments();
@@ -81,17 +83,17 @@ public class KubeletAssignRunnable implements Runnable {
 			Assignment assignment = coordination.getAssignment(topologyId);
 			allAssignments.put(assignment.getTopologyId(), assignment);
 		}
-		logger.debug("************read all assignment :" + allAssignments + "***********") ;
+		logger.debug("************read all assignment :" + JsonUtils.toJson(allAssignments) + "***********") ;
 		
 		//get current kubelet assignments by zk
 		Map<Integer, ResourcePodSlot> localZkAssignments = getLocalzkAssign(allAssignments);
-		logger.debug("************read local zk assignment :" + localZkAssignments + "************");
+		logger.debug("************read local zk assignment :" + JsonUtils.toJson(localZkAssignments) + "************");
 		
 		//get assigned local assignments and save localzkAssignment
 		Map<Integer, ResourcePodSlot> localAssignments = null;
 		try{
 			localAssignments = KubeletLocalState.getLocalAssignments(kubeletId);
-			logger.debug("************read local assignment : " + localAssignments + "************");
+			logger.debug("************read local assignment : " + JsonUtils.toJson(localAssignments) + "************");
 			KubeletLocalState.setLocalAssignments(kubeletId, localZkAssignments);
 		}catch(Exception e){
 			throw new BusinessException(e);
@@ -99,7 +101,7 @@ public class KubeletAssignRunnable implements Runnable {
 		
 		//get need update assigned data(server update)
 		Set<String> localUpdateAssignments = getUpdateAssignments(allAssignments,localZkAssignments,localAssignments);
-		logger.debug("************need update assignment topologyId:" + localUpdateAssignments + "************");
+		logger.debug("************need update assignment topologyId:" + JsonUtils.toJson(localUpdateAssignments) + "************");
 		
 		//get local pod state heartbeat
 		Map<Integer, StatePodHeartbeat> podHbMappodHbMap = KubeletLocalState.getStatePodHeartbeats();
