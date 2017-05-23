@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class ApiServerYaml implements Serializable{
 
+	private static final long serialVersionUID = -3778675798130537010L;
+	
 	private String apiVersion;
 	private String kind;
 	private RootMetadata metadata;

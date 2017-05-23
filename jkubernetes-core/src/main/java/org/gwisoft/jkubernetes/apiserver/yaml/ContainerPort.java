@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class ContainerPort implements Serializable {
 
+	private static final long serialVersionUID = 5227841874172451473L;
+	
 	private Integer containerPort;
 	private Integer hostPort;
 	public Integer getContainerPort() {

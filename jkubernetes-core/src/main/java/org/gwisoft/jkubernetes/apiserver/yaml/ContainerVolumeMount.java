@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class ContainerVolumeMount implements Serializable{
 
+	private static final long serialVersionUID = -3941514362022288640L;
+	
 	private String name;
 	private String mountPath;
 	public String getName() {

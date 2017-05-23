@@ -5,6 +5,8 @@ import java.util.List;
 
 public class PodContainer implements Serializable{
 
+	private static final long serialVersionUID = 8214020217163549498L;
+	
 	private String name;
 	private String image;
 	private List<ContainerVolumeMount> volumeMounts;

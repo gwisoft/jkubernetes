@@ -40,253 +40,278 @@ public class ServiceHandler implements Iface {
 	
 	@Override
 	public void submitTopologyStr(String yaml) throws TException {
-		byte[] bytes = null;
-		try {
-			bytes = yaml.getBytes("utf-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
+		try{
+			byte[] bytes = null;
+			try {
+				bytes = yaml.getBytes("utf-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			System.out.println(DigestUtils.md5Hex(bytes));
+			ApiServerYamlAnalyzer analyzer = new ApiServerYamlAnalyzer(bytes);
+
+			TopologyAssignEvent assignEvent = new TopologyAssignEvent();
+			String topologyId = analyzer.getTopologyId();
+	        assignEvent.setTopologyId(topologyId);
+	        assignEvent.setTopologyName(analyzer.getApiServerYaml().getMetadata().getName());
+	        assignEvent.setApiServerYaml(analyzer.getApiServerYaml());
+	        assignEvent.setAssignType(AssignType.assign);
+
+	        TopologyAssignRunnable.push(assignEvent);
+
+	        boolean isSuccess = assignEvent.waitFinish();
+	        if (isSuccess == true) {
+	            logger.info("Finish submit for " + assignEvent.getTopologyName());
+	        } else {
+	            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
+	        }
+			
+		}catch(Exception e){
+			throw new TException(e);
 		}
-		System.out.println(DigestUtils.md5Hex(bytes));
-		ApiServerYamlAnalyzer analyzer = new ApiServerYamlAnalyzer(bytes);
-
-		TopologyAssignEvent assignEvent = new TopologyAssignEvent();
-		String topologyId = analyzer.getTopologyId();
-        assignEvent.setTopologyId(topologyId);
-        assignEvent.setTopologyName(analyzer.getApiServerYaml().getMetadata().getName());
-        assignEvent.setApiServerYaml(analyzer.getApiServerYaml());
-        assignEvent.setAssignType(AssignType.assign);
-
-        TopologyAssignRunnable.push(assignEvent);
-
-        boolean isSuccess = assignEvent.waitFinish();
-        if (isSuccess == true) {
-            logger.info("Finish submit for " + assignEvent.getTopologyName());
-        } else {
-            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
-        }
 		
 	}
 
 	@Override
 	public void deleteTopology(String yaml) throws TException {
+		try{
+			byte[] bytes = null;
+			try {
+				bytes = yaml.getBytes("utf-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			System.out.println(DigestUtils.md5Hex(bytes));
+			ApiServerYamlAnalyzer analyzer = new ApiServerYamlAnalyzer(bytes);
+			
+			TopologyAssignEvent assignEvent = new TopologyAssignEvent();
+	        assignEvent.setTopologyName(analyzer.getTopologyName());
+	        assignEvent.setAssignType(AssignType.delete);
 
-		byte[] bytes = null;
-		try {
-			bytes = yaml.getBytes("utf-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
+	        TopologyAssignRunnable.push(assignEvent);
+
+	        boolean isSuccess = assignEvent.waitFinish();
+	        if (isSuccess == true) {
+	            logger.info("Finish submit for " + assignEvent.getTopologyName());
+	        } else {
+	            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
+	        }
+		}catch(Exception e){
+			throw new TException(e);
 		}
-		System.out.println(DigestUtils.md5Hex(bytes));
-		ApiServerYamlAnalyzer analyzer = new ApiServerYamlAnalyzer(bytes);
-		
-		TopologyAssignEvent assignEvent = new TopologyAssignEvent();
-        assignEvent.setTopologyName(analyzer.getTopologyName());
-        assignEvent.setAssignType(AssignType.delete);
-
-        TopologyAssignRunnable.push(assignEvent);
-
-        boolean isSuccess = assignEvent.waitFinish();
-        if (isSuccess == true) {
-            logger.info("Finish submit for " + assignEvent.getTopologyName());
-        } else {
-            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
-        }
-		
 	}
 
 	@Override
 	public void rollingUpdateTopology(String oldTopologyName, String yaml) throws TException {
-		byte[] bytes = null;
-		try {
-			bytes = yaml.getBytes("utf-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
-		}
-		System.out.println(DigestUtils.md5Hex(bytes));
-		ApiServerYamlAnalyzer newAnalyzer = new ApiServerYamlAnalyzer(bytes);
+		try{
+			byte[] bytes = null;
+			try {
+				bytes = yaml.getBytes("utf-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			System.out.println(DigestUtils.md5Hex(bytes));
+			ApiServerYamlAnalyzer newAnalyzer = new ApiServerYamlAnalyzer(bytes);
 
-		KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
-		Assignment assignment = coordination.getAssignmentByName(oldTopologyName);
-		if(assignment == null){
-			throw new BusinessException("old topology name " + oldTopologyName + "is not exist!");
-		}
+			KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
+			Assignment assignment = coordination.getAssignmentByName(oldTopologyName);
+			if(assignment == null){
+				throw new BusinessException("old topology name " + oldTopologyName + "is not exist!");
+			}
 
-		if(assignment.getTopologyName().equalsIgnoreCase(newAnalyzer.getTopologyName())){
-			throw new BusinessException("rolling update topology Name cannot be the same !");
-		}
-		
-		Integer newRcNum = newAnalyzer.getApiServerYaml().getSpec().getReplicas();
-		Integer oldRcNum = assignment.getApiServerYaml().getSpec().getReplicas();
-		Integer newRcDeployedNum = 1;
-		Integer oldRcUndeployNum = 1;
-		for(int i = 1; i <= (newRcNum > oldRcNum?newRcNum:oldRcNum);i++){
+			if(assignment.getTopologyName().equalsIgnoreCase(newAnalyzer.getTopologyName())){
+				throw new BusinessException("rolling update topology Name cannot be the same !");
+			}
 			
-			// undeploy old topology
-			if(oldRcUndeployNum <= oldRcNum){
-				assignment.getApiServerYaml().getSpec().setReplicas(oldRcNum - oldRcUndeployNum);
-				TopologyAssignEvent assignEvent = new TopologyAssignEvent();
-				String topologyId = assignment.getTopologyId();
-		        assignEvent.setTopologyId(topologyId);
-		        assignEvent.setTopologyName(assignment.getTopologyName());
-		        assignEvent.setApiServerYaml(assignment.getApiServerYaml());
-		        assignEvent.setAssignType(AssignType.anewAssign);
+			Integer newRcNum = newAnalyzer.getApiServerYaml().getSpec().getReplicas();
+			Integer oldRcNum = assignment.getApiServerYaml().getSpec().getReplicas();
+			Integer newRcDeployedNum = 1;
+			Integer oldRcUndeployNum = 1;
+			for(int i = 1; i <= (newRcNum > oldRcNum?newRcNum:oldRcNum);i++){
+				
+				// undeploy old topology
+				if(oldRcUndeployNum <= oldRcNum){
+					assignment.getApiServerYaml().getSpec().setReplicas(oldRcNum - oldRcUndeployNum);
+					TopologyAssignEvent assignEvent = new TopologyAssignEvent();
+					String topologyId = assignment.getTopologyId();
+			        assignEvent.setTopologyId(topologyId);
+			        assignEvent.setTopologyName(assignment.getTopologyName());
+			        assignEvent.setApiServerYaml(assignment.getApiServerYaml());
+			        assignEvent.setAssignType(AssignType.anewAssign);
 
-		        TopologyAssignRunnable.push(assignEvent);
+			        TopologyAssignRunnable.push(assignEvent);
 
-		        boolean isSuccess = assignEvent.waitFinish();
-		        if (isSuccess == true) {
-		        	oldRcUndeployNum++;
-		            logger.info("Finish submit for " + assignEvent.getTopologyName() + " rolling undeploy rc num=" + oldRcUndeployNum);
-		        } else {
-		            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
-		        }
-		        
-		        //is success run pod
-				while(true){
-					Assignment oldAssignment = coordination.getAssignment(assignment.getTopologyId());
+			        boolean isSuccess = assignEvent.waitFinish();
+			        if (isSuccess == true) {
+			        	oldRcUndeployNum++;
+			            logger.info("Finish submit for " + assignEvent.getTopologyName() + " rolling undeploy rc num=" + oldRcUndeployNum);
+			        } else {
+			            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
+			        }
+			        
+			        //is success run pod
+					while(true){
+						Assignment oldAssignment = coordination.getAssignment(assignment.getTopologyId());
+						
+						if(oldAssignment != null
+								&& oldAssignment.getState().equals(ResourcePodSlot.AssignmentState.AssignmentSuccess)){
+							break;
+						}
+
+						try {
+							Thread.sleep(1000);
+							logger.info("rolling updateing...");
+						} catch (InterruptedException e) {
+							logger.warn("",e);
+						}
+					}
 					
-					if(oldAssignment != null
-							&& oldAssignment.getState().equals(ResourcePodSlot.AssignmentState.AssignmentSuccess)){
-						break;
-					}
-
-					try {
-						Thread.sleep(1000);
-						logger.info("rolling updateing...");
-					} catch (InterruptedException e) {
-						logger.warn("",e);
-					}
 				}
 				
-			}
-			
-			// deploy new topology
-			if(newRcDeployedNum <= newRcNum){
-				newAnalyzer.getApiServerYaml().getSpec().setReplicas(newRcDeployedNum);
-				TopologyAssignEvent assignEvent = new TopologyAssignEvent();
-				String topologyId = newAnalyzer.getTopologyId();
-		        assignEvent.setTopologyId(topologyId);
-		        assignEvent.setTopologyName(newAnalyzer.getTopologyName());
-		        assignEvent.setApiServerYaml(newAnalyzer.getApiServerYaml());
-		        
-		        //if first deploy new topology
-		        if(i != 1){
-		        	assignEvent.setAssignType(AssignType.anewAssign);
-		        }else{
-		        	assignEvent.setAssignType(AssignType.assign);
-		        }
-		        
+				// deploy new topology
+				if(newRcDeployedNum <= newRcNum){
+					newAnalyzer.getApiServerYaml().getSpec().setReplicas(newRcDeployedNum);
+					TopologyAssignEvent assignEvent = new TopologyAssignEvent();
+					String topologyId = newAnalyzer.getTopologyId();
+			        assignEvent.setTopologyId(topologyId);
+			        assignEvent.setTopologyName(newAnalyzer.getTopologyName());
+			        assignEvent.setApiServerYaml(newAnalyzer.getApiServerYaml());
+			        
+			        //if first deploy new topology
+			        if(i != 1){
+			        	assignEvent.setAssignType(AssignType.anewAssign);
+			        }else{
+			        	assignEvent.setAssignType(AssignType.assign);
+			        }
+			        
 
-		        TopologyAssignRunnable.push(assignEvent);
+			        TopologyAssignRunnable.push(assignEvent);
 
-		        boolean isSuccess = assignEvent.waitFinish();
-		        if (isSuccess == true) {
-		        	newRcDeployedNum++;
-		            logger.info("Finish submit for " + assignEvent.getTopologyName() + "rolling deploy rc num=" + newRcDeployedNum);
-		        } else {
-		            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
-		        }
-		        
-		        //is success run pod
-				while(true){
-					Assignment newAssignment = coordination.getAssignment(topologyId);
-					
-					if(newAssignment != null
-							&& newAssignment.getState().equals(ResourcePodSlot.AssignmentState.AssignmentSuccess)){
-						break;
-					}
+			        boolean isSuccess = assignEvent.waitFinish();
+			        if (isSuccess == true) {
+			        	newRcDeployedNum++;
+			            logger.info("Finish submit for " + assignEvent.getTopologyName() + "rolling deploy rc num=" + newRcDeployedNum);
+			        } else {
+			            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
+			        }
+			        
+			        //is success run pod
+					while(true){
+						Assignment newAssignment = coordination.getAssignment(topologyId);
+						
+						if(newAssignment != null
+								&& newAssignment.getState().equals(ResourcePodSlot.AssignmentState.AssignmentSuccess)){
+							break;
+						}
 
-					try {
-						Thread.sleep(1000);
-						logger.info("rolling updateing...");
-					} catch (InterruptedException e) {
-						logger.warn("",e);
+						try {
+							Thread.sleep(1000);
+							logger.info("rolling updateing...");
+						} catch (InterruptedException e) {
+							logger.warn("",e);
+						}
 					}
 				}
 			}
+			
+			//delete old topology
+			TopologyAssignEvent assignEvent1 = new TopologyAssignEvent();
+	        assignEvent1.setTopologyName(assignment.getTopologyName());
+	        assignEvent1.setAssignType(AssignType.delete);
+
+	        TopologyAssignRunnable.push(assignEvent1);
+
+	        boolean isSuccess1 = assignEvent1.waitFinish();
+	        if (isSuccess1 == true) {
+	            logger.info("delete topology name= " + assignEvent1.getTopologyName());
+	        } else {
+	            throw new FailedAssignTopologyException(assignEvent1.getErrorMsg());
+	        }
+
+			
+			logger.info("oldTopologyName=" + assignment.getTopologyName() + " and newTopologyName=" + newAnalyzer.getTopologyName() + "rolling update success!");
+			
+		}catch(Exception e){
+			throw new TException(e);
 		}
-		
-		//delete old topology
-		TopologyAssignEvent assignEvent1 = new TopologyAssignEvent();
-        assignEvent1.setTopologyName(assignment.getTopologyName());
-        assignEvent1.setAssignType(AssignType.delete);
-
-        TopologyAssignRunnable.push(assignEvent1);
-
-        boolean isSuccess1 = assignEvent1.waitFinish();
-        if (isSuccess1 == true) {
-            logger.info("delete topology name= " + assignEvent1.getTopologyName());
-        } else {
-            throw new FailedAssignTopologyException(assignEvent1.getErrorMsg());
-        }
-
-		
-		logger.info("oldTopologyName=" + assignment.getTopologyName() + " and newTopologyName=" + newAnalyzer.getTopologyName() + "rolling update success!");
 		
 	}
 
 	@Override
 	public String getTopologyInfo(String topologyName) throws TException {
-		KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
-		Assignment assignment = coordination.getAssignmentByName(topologyName);
-		if(assignment == null){
-			throw new BusinessException("topology name " + topologyName + "is not exist!");
+		try{
+			KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
+			Assignment assignment = coordination.getAssignmentByName(topologyName);
+			if(assignment == null){
+				throw new BusinessException("topology name " + topologyName + "is not exist!");
+			}
+			
+			String json = JsonUtils.toJson(assignment);
+			logger.info("query topology info success! (topology name=" + topologyName + ")");
+			return json;
+		}catch(Exception e){
+			throw new TException(e);
 		}
 		
-		String json = JsonUtils.toJson(assignment);
-		logger.info("query topology info success! (topology name=" + topologyName + ")");
-		return json;
 	}
 
 	@Override
 	public void replaceTopology(String yaml) throws TException {
-		byte[] bytes = null;
-		try {
-			bytes = yaml.getBytes("utf-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
+		try{
+			byte[] bytes = null;
+			try {
+				bytes = yaml.getBytes("utf-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			System.out.println(DigestUtils.md5Hex(bytes));
+			ApiServerYamlAnalyzer analyzer = new ApiServerYamlAnalyzer(bytes);
+			
+			KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
+			Assignment assignment = coordination.getAssignmentByName(analyzer.getTopologyName());
+			if(assignment == null){
+				throw new BusinessException("old topology name " + analyzer.getTopologyName() + "is not exist!");
+			}
+
+			TopologyAssignEvent assignEvent = new TopologyAssignEvent();
+	        assignEvent.setTopologyId(assignment.getTopologyId());
+	        assignEvent.setTopologyName(analyzer.getTopologyName());
+	        assignEvent.setApiServerYaml(analyzer.getApiServerYaml());
+	        assignEvent.setAssignType(AssignType.anewAssign);
+
+	        TopologyAssignRunnable.push(assignEvent);
+
+	        boolean isSuccess = assignEvent.waitFinish();
+	        if (isSuccess == true) {
+	            logger.info("Finish submit for " + assignEvent.getTopologyName());
+	        } else {
+	            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
+	        }
+		}catch(Exception e){
+			throw new TException(e);
 		}
-		System.out.println(DigestUtils.md5Hex(bytes));
-		ApiServerYamlAnalyzer analyzer = new ApiServerYamlAnalyzer(bytes);
 		
-		KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
-		Assignment assignment = coordination.getAssignmentByName(analyzer.getTopologyName());
-		if(assignment == null){
-			throw new BusinessException("old topology name " + analyzer.getTopologyName() + "is not exist!");
-		}
-
-		TopologyAssignEvent assignEvent = new TopologyAssignEvent();
-        assignEvent.setTopologyId(assignment.getTopologyId());
-        assignEvent.setTopologyName(analyzer.getTopologyName());
-        assignEvent.setApiServerYaml(analyzer.getApiServerYaml());
-        assignEvent.setAssignType(AssignType.anewAssign);
-
-        TopologyAssignRunnable.push(assignEvent);
-
-        boolean isSuccess = assignEvent.waitFinish();
-        if (isSuccess == true) {
-            logger.info("Finish submit for " + assignEvent.getTopologyName());
-        } else {
-            throw new FailedAssignTopologyException(assignEvent.getErrorMsg());
-        }
 		
 	}
 
 	@Override
 	public String getTopologyInfoAll() throws TException {
-		KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
-		List<String> topologyIds = coordination.getAssignments();
-		List<Assignment> assignments = new ArrayList<>();
-		for(String topologyId:topologyIds){
-			Assignment assignment = coordination.getAssignment(topologyId);
-			assignments.add(assignment);
-		}
+		try{
+			KubernetesClusterCoordination coordination = KubernetesCluster.instanceCoordination();
+			List<String> topologyIds = coordination.getAssignments();
+			List<Assignment> assignments = new ArrayList<>();
+			for(String topologyId:topologyIds){
+				Assignment assignment = coordination.getAssignment(topologyId);
+				assignments.add(assignment);
+			}
 
-		
-		String json = JsonUtils.toJson(assignments);
-		logger.info("query all topology info success!");
-		return json;
-		
+			
+			String json = JsonUtils.toJson(assignments);
+			logger.info("query all topology info success!");
+			return json;
+		}catch(Exception e){
+			throw new TException(e);
+		}
 	}
 
 }

@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class RootSpec implements Serializable{
 
+	private static final long serialVersionUID = -5683465824543815590L;
+	
 	private Integer replicas;
 	private Template template;
 	public Integer getReplicas() {
