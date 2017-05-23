@@ -1,6 +1,6 @@
 #!/bin/env python
 
-import os
+import os 
 import sys
 import random
 import subprocess as sub
